@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 20px;
+        }
+        nav ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+        nav li {
+            margin-right: 20px;
+        }
+        nav a {
+            color: #fff;
+            text-decoration: none;
+        }
+        main {
+            padding: 20px;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/About">About</a></li>
+                <li><a href="/SignUp">Sign Up</a></li>
+                <li><a href="/Login">Login</a></li>
+                <li><a href="/Upload/{{username}}">Upload</a></li>
+                <li><a href="/ShowImage/{{username}}">Image</a></li>
+                <li><a href="/Logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+        {% if message %}
+            <p>{{ message }}</p>
+        {% endif %}
+        <div class="container">
+            <h1>OCR hóa đơn</h1>
+            <p>Chuyển hóa hóa đơn giấy thành dữ liệu số chỉ với một vài cú click.</p>
+            <h2>Ví dụ:</h2>
+            <image src = "{{url_for('static', filename='images/english.png')}}" alt = "Example"></image> 
+            <!-- <input type="file" id="imageUpload" accept="image/*">
+            <button id="uploadButton">Tải lên</button>
+            <div id="result"></div> -->
+        </div>
+        <!-- <image src = "{{url_for('static', filename='image_user/chau/appli1.jpg')}}" alt = "abc"></image> -->
+</body>
+</html>
