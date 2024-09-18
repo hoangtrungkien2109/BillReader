@@ -30,7 +30,6 @@ window.onload = function() {
         } else if (clickCount === 2) {
             rectEnd = { x: x, y: y };  // Điểm kết thúc
             console.log("End point:", rectEnd);
-
             // Vẽ hình chữ nhật từ điểm đầu đến điểm cuối
             let width = rectEnd.x - rectStart.x;
             let height = rectEnd.y - rectStart.y;
@@ -38,7 +37,6 @@ window.onload = function() {
             ctx.strokeStyle = 'red';
             ctx.lineWidth = 2;
             ctx.strokeRect(rectStart.x, rectStart.y, width, height);
-            
             // Sau khi vẽ xong, reset clickCount để vẽ hình mới
             clickCount = 0;
         }
