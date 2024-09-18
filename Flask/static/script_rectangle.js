@@ -5,17 +5,18 @@ window.onload = function() {
     let clickCount = 0;
     let rectStart = null;
     let rectEnd = null;
-
+    let coordinates = []; 
+    
     // Đường dẫn đến ảnh bạn muốn vẽ
     img.src = imagePath;  // Tải ảnh
+    imageName1 = img.src.split('/').pop();
+    imageFilename = imageName1.split('.')[0];
 
     img.onload = function() {
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
     };
-
-
 
     // Lưu tọa độ khi nhấp chuột vào ảnh
     canvas.addEventListener('click', function(event) {
@@ -46,23 +47,28 @@ window.onload = function() {
     // Khi bấm nút save, gửi dữ liệu hình ảnh đến server
     document.getElementById('save').addEventListener('click', function() {
         let dataURL = canvas.toDataURL('image/png');
-        fetch('/save-drawed-image', {
+        fetch('/save-coordinates', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+              'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                imageData: dataURL,
-                username: "username",
-                imageName: "image_name"
+              x1: rectStart.x,
+              y1: rectStart.y,
+              x2: rectEnd.x,
+              y2: rectEnd.y,
+              imageName: imageFilename
             })
-        })
-        .then(response => response.json())
-        .then(data => {
-            alert('Image saved successfully!');
-        })
-        .catch(error => {
-            console.error('Error saving image:', error);
+          })
+          .then(response => response.json())
+          .then(data => {
+            alert('Tọa độ đã được lưu thành công!');
+          })
+          .catch(error => {
+            console.error('Lỗi khi lưu tọa độ:', error);
+          });
         });
-    });
+    function addCoordinates(x1, y1, x2, y2) {
+        coordinates.push({ x1, y1, x2, y2 });
+    }
 }

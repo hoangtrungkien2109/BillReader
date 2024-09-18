@@ -1,0 +1,30 @@
+{
+  "id_user": "user01",
+  "name": "Kien",
+  "bills": [
+    {
+      "bill01": [
+        {
+	      "field_name": "tong cong",
+          "value_coordinate": [1, 2, 3, 4]
+	    },
+	    {
+	      "field_name": "gio vao",
+          "value_coordinate": [1, 2, 3, 4]
+	    }
+      ]
+    },
+    {
+      "bill02": [
+        {
+	      "field_name": "tong cong",
+          "value_coordinate": [1, 2, 3, 4]
+	    },
+	    {
+	      "field_name": "gio vao",
+          "value_coordinate": [1, 2, 3, 4]
+	    }
+      ]
+    }
+  ]
+}
