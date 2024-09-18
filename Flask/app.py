@@ -4,6 +4,8 @@ import base64
 from datetime import timedelta
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
+import json
+
 app= Flask(__name__)
 app._static_folder = ''
 app.config['UPLOAD_FOLDER'] = 'Flask/image_user'
@@ -96,6 +98,7 @@ def Upload_file(username):
                 return render_template('Upload.html', username = username, message='Upload file thành công!')
     return render_template('Upload.html',username = username)
 
+
 @app.route('/ShowImage/<username>')
 def show_images(username):
     if username == "Guest":
@@ -104,16 +107,19 @@ def show_images(username):
         user_folder = os.path.join(app.config['UPLOAD_FOLDER'], username,'Label')
         images = os.listdir(user_folder)
         return render_template('ShowImage.html', username = username, images = images)
-    
+
+
 @app.route('/About')
 def About():
     return render_template("About.html")
+
 
 @app.route('/Save/<filename>')
 def Save(filename):
     username = session["username"]
     path = "image_user/" + username + '/'
     return send_file(path + filename, as_attachment=True)
+
 
 @app.route('/draw/<image_name>')
 def draw(image_name):
@@ -122,6 +128,7 @@ def draw(image_name):
         image_path = f'/static/image_user/{username}/{image_name}'
         return render_template('DrawImage.html', image_path=image_path)
     return redirect(url_for('Login'))
+
 
 @app.route('/save-coordinates', methods=['POST'])
 def save_coordinates():
@@ -167,6 +174,8 @@ def save_coordinates_test():
         json.dump(data, f)
 
     return jsonify({'message': 'Tọa độ đã được lưu thành công!'})
+
+
 def ve():
     with open('Flask/image_user_rectangle/chau/appli1.txt', 'r') as f:
         coords = f.readline().split(',')
@@ -180,8 +189,9 @@ def ve():
     cv2.imshow("img",img) # Use cv2_imshow instead of cv2.imshow
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    
+
+
 with app.app_context():
     db.create_all()
-if __name__=="__main__":
-    app.run(debug= True)
+if __name__ == "__main__":
+    app.run(debug=True)
