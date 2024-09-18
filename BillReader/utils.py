@@ -9,6 +9,7 @@ import random
 import os
 import shutil
 import logging
+from ultralytics import YOLO
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename='augment.log', level=logging.INFO)
@@ -93,3 +94,17 @@ def extract_bill_from_image(img_dir: str, dst_dir: str, extension: str = ".jpg")
         image = cv2.imread(image_path)
         image = preprocess(image)
         cv2.imwrite(dst_dir + "/" + image_filename, image)
+
+
+def find_field_yolo(model_path, src_path):
+    model = YOLO(model_path)
+    results = model.predict(source=src_path, save=True, save_txt=True)
+    return results
+
+
+def train_yolo(yaml_path, runs_path, epochs, pretrained=None):
+    if pretrained:
+        model = YOLO(pretrained)
+    else:
+        model = YOLO("yolov8n.pt")
+    model.train(data=yaml_path, epochs=epochs, resume=True if pretrained else False, project=runs_path)
