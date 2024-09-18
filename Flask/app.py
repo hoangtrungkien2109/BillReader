@@ -123,31 +123,9 @@ def draw(image_name):
         return render_template('DrawImage.html', image_path=image_path)
     return redirect(url_for('Login'))
 
+
 @app.route('/save-coordinates', methods=['POST'])
 def save_coordinates():
-    username = session['username']
-    data = request.get_json()
-    x1 = data['x1']
-    y1 = data['y1']
-    x2 = data['x2']
-    y2 = data['y2']
-    image_name = data['imageName']
-
-    # Đường dẫn tới thư mục chứa file tọa độ
-    directory = os.path.join("Flask", "image_user_rectangle", username)
-    # Kiểm tra và tạo thư mục nếu chưa tồn tại
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    # Tên file tọa độ
-    filename = os.path.join(directory, f"{image_name}.txt")
-    # Ghi tọa độ vào file
-    with open(filename, 'w') as f:
-        f.write(f"{x1},{y1},{x2},{y2}\n")
-
-    return "Tọa độ đã được lưu thành công!"
-
-@app.route('/save-coordinates-test', methods=['POST'])
-def save_coordinates_test():
     username = session['username']
     data = request.get_json()  # Get the JSON data from the request
     image_name = data.get('imageName')
@@ -162,7 +140,7 @@ def save_coordinates_test():
     # Prepare the text content to save
     with open(filename, 'w') as f:
         for i, coord in enumerate(coordinates):
-            f.write(f"{coord['x1']},{coord['y1']},{coord['x2']},{coord['y2']},\n")
+            f.write(f"{coord['x1']},{coord['y1']},{coord['x2']},{coord['y2']}\n")
     return jsonify({'message': 'Coordinates saved successfully!'}), 200
 def ve():
     with open('Flask/image_user_rectangle/chau/appli1.txt', 'r') as f:

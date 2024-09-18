@@ -61,7 +61,7 @@ window.onload = function() {
 
     // Send coordinates to the server when save button is clicked
     document.getElementById('save').addEventListener('click', function() {
-        fetch('/save-coordinates-test', {
+        fetch('/save-coordinates', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
