@@ -148,25 +148,22 @@ def save_coordinates():
 
 @app.route('/save-coordinates-test', methods=['POST'])
 def save_coordinates_test():
-    # Nhận dữ liệu từ client
-    username=session['username']
-    data = request.get_json()
-    x1 = data['x1']
-    y1 = data['y1']
-    x2 = data['x2']
-    y2 = data['y2']
-    image_name = data['imageName']
+    username = session['username']
+    data = request.get_json()  # Get the JSON data from the request
+    image_name = data.get('imageName')
+    coordinates = data.get('coordinates')
+    if not image_name or not coordinates:
+        return jsonify({'error': 'Invalid data'}), 400
+    # Create a filename based on the image name
     directory = os.path.join("Flask", "image_user_rectangle", username)
-    # Kiểm tra và tạo thư mục nếu chưa tồn tại
     if not os.path.exists(directory):
         os.makedirs(directory)
-    # Tên file tọa độ
     filename = os.path.join(directory, f"{image_name}.txt")
-    # Lưu dữ liệu vào file (thay thế bằng cách lưu vào database nếu cần)
+    # Prepare the text content to save
     with open(filename, 'w') as f:
-        json.dump(data, f)
-
-    return jsonify({'message': 'Tọa độ đã được lưu thành công!'})
+        for i, coord in enumerate(coordinates):
+            f.write(f"{coord['x1']},{coord['y1']},{coord['x2']},{coord['y2']},\n")
+    return jsonify({'message': 'Coordinates saved successfully!'}), 200
 def ve():
     with open('Flask/image_user_rectangle/chau/appli1.txt', 'r') as f:
         coords = f.readline().split(',')
