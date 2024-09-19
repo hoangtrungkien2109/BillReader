@@ -8,11 +8,8 @@ import numpy
 import random
 import os
 import shutil
-import logging
 from ultralytics import YOLO
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(filename='augment.log', level=logging.INFO)
+from multiprocessing import Process
 
 
 def augment_image(src: str, dst: str, multiplier: int, start: int = 0, end: int | None = None):
@@ -23,8 +20,9 @@ def augment_image(src: str, dst: str, multiplier: int, start: int = 0, end: int 
     :param start: Start index of image in src_path
     :param end: End index of image in src_path
     """
-    logger.info("Augmenting image")
     image_paths = glob.glob(src + "/*.jpg")
+    if not os.path.exists(dst):
+        os.makedirs(dst)
     if end is None:
         end = len(image_paths)
     for image_path in image_paths[start:end]:
@@ -60,7 +58,37 @@ def augment_image(src: str, dst: str, multiplier: int, start: int = 0, end: int 
 
             # Copy the file and rename it
             shutil.copy2(src_path, dst_path)
-            logger.info(f" Copied '{old_filename}' to '{filename}' in '{dst_folder}'")
+
+
+def multiprocess_augment(src_paths, dst_paths=None, multipliers=None, max_amounts=None, classification: bool = False,
+                         starts=None, ends=None):
+    processes = []
+    if classification:
+        for idx, src_path in enumerate(src_paths):
+            p = Process(
+                target=augment_image,
+                args=(
+                    src_path,
+                    src_path,
+                    multipliers[idx] if multipliers else (max_amounts[idx] // len(glob.glob(src_path + "/*")))
+            ))
+            processes.append(p)
+    else:
+        for idx, dst_path in enumerate(dst_paths):
+            p = Process(
+                target=augment_image,
+                args=(
+                    src_paths,
+                    dst_path,
+                    multipliers[idx] if multipliers else (max_amounts[idx] // len(glob.glob(src_paths + "/*"))),
+                    starts[idx] if starts else 0,
+                    ends[idx] if ends else None
+            ))
+            processes.append(p)
+    for p in processes:
+        p.start()
+    for p in processes:
+        p.join()
 
 
 def detach_annotations(src_path, dst_path_1, dst_path_2, num_detach: int = 2):
@@ -86,6 +114,17 @@ def no_accent_vietnamese(s):
     return s
 
 
+def rename_file(src_path):
+    img_paths = glob.glob(src_path + "/*.jpg")
+    ann_paths = glob.glob(src_path + "/*.txt")
+    cnt = 1
+    for img_path, ann_path in zip(img_paths, ann_paths):
+        new_name = "bill" + str(cnt)
+        os.rename(img_path, img_path.split("\\")[0] + "/" + new_name + ".jpg")
+        os.rename(ann_path, ann_path.split("\\")[0] + "/" + new_name + ".txt")
+        cnt += 1
+
+
 def extract_bill_from_image(img_dir: str, dst_dir: str, extension: str = ".jpg") -> None:
     image_paths = glob.glob(img_dir + '/*' + extension)
     for image_path in image_paths:
@@ -108,3 +147,9 @@ def train_yolo(yaml_path, runs_path, epochs, pretrained=None):
     else:
         model = YOLO("yolov8n.pt")
     model.train(data=yaml_path, epochs=epochs, resume=True if pretrained else False, project=runs_path)
+
+
+def find_corners(model_path, src_path):
+    model = YOLO(model_path)
+    results = model.predict(source=src_path, save=True, save_txt=True)
+    return results
