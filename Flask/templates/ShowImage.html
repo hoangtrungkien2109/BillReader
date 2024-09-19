@@ -19,7 +19,8 @@
                 <li><img src="{{ url_for('static', filename='image_user/'+ username +  '/Label/' + image) }}" alt="{{image}}"></img></li>
                 </br>
                 <a href="{{ url_for('Save', filename= image) }}">Lưu ảnh</a>
-                <li><a href="{{ url_for('draw', image_name=image) }}">Draw</a></li>
+                
+                <a href="{{ url_for('draw', image_name=image) }}">Draw</a>
             {% endfor %}
         </table>
     </ul>

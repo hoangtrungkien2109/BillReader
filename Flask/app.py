@@ -72,7 +72,7 @@ def logout():
 @app.route('/Upload/<username>', methods=['GET', 'POST'])
 def Upload_file(username):
     imageCount = 1
-    for root, dirs, files in os.walk('Flask/image_user/chau/Label'):
+    for root, dirs, files in os.walk('image_user/chau/Label'):
         imageCount += len(files)
     if 'username' in session:
         if request.method == 'POST':
@@ -133,7 +133,7 @@ def save_coordinates():
     if not image_name or not coordinates:
         return jsonify({'error': 'Invalid data'}), 400
     # Create a filename based on the image name
-    directory = os.path.join("Flask", "image_user_rectangle", username)
+    directory = os.path.join("image_user_rectangle", username)
     if not os.path.exists(directory):
         os.makedirs(directory)
     filename = os.path.join(directory, f"{image_name}.txt")
@@ -143,14 +143,12 @@ def save_coordinates():
             f.write(f"{coord['x1']},{coord['y1']},{coord['x2']},{coord['y2']}\n")
     return jsonify({'message': 'Coordinates saved successfully!'}), 200
 def ve():
-    with open('Flask/image_user_rectangle/chau/appli1.txt', 'r') as f:
+    with open('image_user_rectangle/chau/appli1.txt', 'r') as f:
         coords = f.readline().split(',')
         x1, y1, x2, y2 = map(float, coords)
-    img = cv2.imread('Flask/image_user/chau/appli1.jpg')
-
+    img = cv2.imread('image_user/chau/appli1.jpg')
     # Vẽ hình chữ nhật
     cv2.rectangle(img, (int(x1),int(y1)), (int(x2),int(y2)), (0,0,255), 1)
-
     # Hiển thị ảnh
     cv2.imshow("img",img) # Use cv2_imshow instead of cv2.imshow
     cv2.waitKey(0)
