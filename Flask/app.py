@@ -31,8 +31,8 @@ class Image(db.Model):
     
 @app.route("/")
 def home():
-    if 'username' in session:
-        username = session['username']
+    if "username" in session:
+        username = session["username"]
     else:
         username = 'Guest'
     return render_template("index.html", username = username)
@@ -40,8 +40,8 @@ def home():
 @app.route('/Login', methods=['GET', 'POST'])
 def Login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form["username"]
+        password = request.form["password"]
         session["username"] = username
         user = User.query.filter_by(username = username).first()
         password = User.query.filter_by(password = password).first()
@@ -67,43 +67,45 @@ def Signup():
 @app.route("/Logout")
 def logout():
     session.pop("username",None)
-    return render_template('Logout.html', message='Đăng xuất thành công!')
+    return render_template('Login.html', message='Đăng xuất thành công!')
 
 @app.route('/Upload/<username>', methods=['GET', 'POST'])
 def Upload_file(username):
-    imageCount = 0
-    username = session['username']
-    directory = "Flask/image_user/"+ username +'/Label'
-    for root, dirs, files in os.walk(directory):
-        imageCount += len(files)
-    if 'username' in session:
-        if request.method == 'POST':
-            if 'file' not in request.files:
-                print('No file part')
-                return 'No file part'
-            file = request.files['file']
-            if file.filename == '':
-                print('No selected file')
-                return 'No selected file'
-            # Lưu file vào thư mục đã định
-            if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                if imageCount < 5:
-                    label_folder = os.path.join(app.config['UPLOAD_FOLDER'], username, 'Label')
-                    if not os.path.exists(label_folder):
-                        os.makedirs(label_folder)
-                    file.save(os.path.join(label_folder, filename))
-                train_folder = os.path.join(app.config['UPLOAD_FOLDER'], username, 'Train')
-                if not os.path.exists(train_folder):
-                    os.makedirs(train_folder)
-                file.save(os.path.join(train_folder, filename))
-            return render_template('Upload.html',username = username, message = "Upload thành công")
+    if "username" not in session:
+        return render_template('Login.html', message = "Bạn chưa đăng nhập")
+    else:
+        imageCount = 0
+        username = session["username"]
+        label_folder = os.path.join(app.config['UPLOAD_FOLDER'], username, 'Label')
+        if not os.path.exists(label_folder):
+            os.makedirs(label_folder)
+        for root, dirs, files in os.walk(label_folder):
+            imageCount += len(files)
+        if "username" in session:
+            if request.method == 'POST':
+                if 'file' not in request.files:
+                    print('No file part')
+                    return 'No file part'
+                file = request.files['file']
+                if file.filename == '':
+                    print('No selected file')
+                    return 'No selected file'
+                # Lưu file vào thư mục đã định
+                if file and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    print(imageCount)
+                    if imageCount < 5:
+                        file.save(os.path.join(label_folder, filename))
+                    train_folder = os.path.join(app.config['UPLOAD_FOLDER'], username, 'Train')
+                    if not os.path.exists(train_folder):
+                        os.makedirs(train_folder)
+                    file.save(os.path.join(train_folder, filename))
+                return render_template('Upload.html',username = username, message = "Upload thành công")
     return render_template('Upload.html',username = username)
 @app.route('/ShowImage/<username>')
 def show_images(username):
-    username = session['username']
-    if username == "Guest":
-        return render_template("index.html", message = 'Bạn chưa đăng nhập')
+    if "username" not in session:
+        return render_template("Login.html",username = username, message = 'Bạn chưa đăng nhập')
     else:
         user_folder = os.path.join(app.config['UPLOAD_FOLDER'], username,'Label')
         imageConut = 0
