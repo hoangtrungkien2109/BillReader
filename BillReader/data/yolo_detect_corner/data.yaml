@@ -1,0 +1,7 @@
+path: BillReader/data/yolo_detect_corner  # dataset root dir
+train: datatrain  # train images (relative to 'path') 128 images
+val: dataval  # val images (relative to 'path') 128 images
+test:  datatest # test images (optional)
+nc: 1
+names:
+  0: corner
