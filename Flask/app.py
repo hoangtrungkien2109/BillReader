@@ -1,6 +1,5 @@
 from flask import Flask, redirect, url_for, render_template, request, session, flash, send_file, jsonify
 import os,cv2
-import base64
 from datetime import timedelta
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
@@ -8,6 +7,7 @@ app= Flask(__name__)
 app._static_folder = ''
 app.config['UPLOAD_FOLDER'] = 'Flask/image_user'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -71,12 +71,14 @@ def logout():
 
 @app.route('/Upload/<username>', methods=['GET', 'POST'])
 def Upload_file(username):
-    imageCount = 1
-    for root, dirs, files in os.walk('image_user/chau/Label'):
+    imageCount = 0
+    username = session['username']
+    directory = "Flask/image_user/"+ username +'/Label'
+    for root, dirs, files in os.walk(directory):
         imageCount += len(files)
     if 'username' in session:
         if request.method == 'POST':
-            if imageCount<=5:
+            if imageCount<5:
                 user_folder = os.path.join(app.config['UPLOAD_FOLDER'], username,'Label')
             else:
                 user_folder = os.path.join(app.config['UPLOAD_FOLDER'], username,'Train')
@@ -98,6 +100,7 @@ def Upload_file(username):
 
 @app.route('/ShowImage/<username>')
 def show_images(username):
+    username = session['username']
     if username == "Guest":
         return render_template("index.html", message = 'Bạn chưa đăng nhập')
     else:
@@ -133,7 +136,7 @@ def save_coordinates():
     if not image_name or not coordinates:
         return jsonify({'error': 'Invalid data'}), 400
     # Create a filename based on the image name
-    directory = os.path.join("image_user_rectangle", username)
+    directory = os.path.join("Flask", "image_user_rectangle", username)
     if not os.path.exists(directory):
         os.makedirs(directory)
     filename = os.path.join(directory, f"{image_name}.txt")
@@ -143,10 +146,10 @@ def save_coordinates():
             f.write(f"{coord['x1']},{coord['y1']},{coord['x2']},{coord['y2']}\n")
     return jsonify({'message': 'Coordinates saved successfully!'}), 200
 def ve():
-    with open('image_user_rectangle/chau/appli1.txt', 'r') as f:
+    with open('Flask/image_user_rectangle/chau/appli1.txt', 'r') as f:
         coords = f.readline().split(',')
         x1, y1, x2, y2 = map(float, coords)
-    img = cv2.imread('image_user/chau/appli1.jpg')
+    img = cv2.imread('Flask/image_user/chau/appli1.jpg')
     # Vẽ hình chữ nhật
     cv2.rectangle(img, (int(x1),int(y1)), (int(x2),int(y2)), (0,0,255), 1)
     # Hiển thị ảnh
