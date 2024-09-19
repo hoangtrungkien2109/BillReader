@@ -16,13 +16,15 @@
         <table>
             {% for image in images %}
                 <p>Image</p>
-                <li><img src="{{ url_for('static', filename='image_user/'+ username +  '/Label/' + image) }}" alt="{{image}}"></img></li>
+                <img src="{{ url_for('static', filename='image_user/'+ username +  '/Label/' + image) }}" alt="{{image}}"></img>
                 </br>
                 <a href="{{ url_for('Save', filename= image) }}">Lưu ảnh</a>
                 
                 <a href="{{ url_for('draw', image_name=image) }}">Draw</a>
             {% endfor %}
         </table>
+        <p>{{ message }}</p>
+        <a href="/">Quay lại</a>
     </ul>
 </body>
 </html>
