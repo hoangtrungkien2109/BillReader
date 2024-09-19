@@ -133,7 +133,7 @@ def draw(image_name):
     if 'username' in session:
         username = session['username']
         image_path = f'/static/image_user/{username}/Label/{image_name}'
-        return render_template('DrawImage.html', image_path=image_path)
+        return render_template('DrawImage.html', username=username, image_path=image_path)
     return redirect(url_for('Login'))
 
 
