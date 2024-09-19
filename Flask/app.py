@@ -78,12 +78,6 @@ def Upload_file(username):
         imageCount += len(files)
     if 'username' in session:
         if request.method == 'POST':
-            if imageCount<5:
-                user_folder = os.path.join(app.config['UPLOAD_FOLDER'], username,'Label')
-            else:
-                user_folder = os.path.join(app.config['UPLOAD_FOLDER'], username,'Train')
-            if not os.path.exists(user_folder):
-                os.makedirs(user_folder)
             if 'file' not in request.files:
                 print('No file part')
                 return 'No file part'
@@ -94,10 +88,17 @@ def Upload_file(username):
             # Lưu file vào thư mục đã định
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-                file.save(os.path.join(user_folder, filename))
-                return render_template('Upload.html', username = username, message='Upload file thành công!')
+                if imageCount < 5:
+                    label_folder = os.path.join(app.config['UPLOAD_FOLDER'], username, 'Label')
+                    if not os.path.exists(label_folder):
+                        os.makedirs(label_folder)
+                    file.save(os.path.join(label_folder, filename))
+                train_folder = os.path.join(app.config['UPLOAD_FOLDER'], username, 'Train')
+                if not os.path.exists(train_folder):
+                    os.makedirs(train_folder)
+                file.save(os.path.join(train_folder, filename))
+            return render_template('Upload.html',username = username, message = "Upload thành công")
     return render_template('Upload.html',username = username)
-
 @app.route('/ShowImage/<username>')
 def show_images(username):
     username = session['username']
