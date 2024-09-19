@@ -106,8 +106,15 @@ def show_images(username):
         return render_template("index.html", message = 'Bạn chưa đăng nhập')
     else:
         user_folder = os.path.join(app.config['UPLOAD_FOLDER'], username,'Label')
-        images = os.listdir(user_folder)
-        return render_template('ShowImage.html', username = username, images = images)
+        imageConut = 0
+        for root, dirs, files in os.walk(user_folder):
+            imageConut += len(files)
+        if imageConut == 0 or not os.path.exists(user_folder):
+            render_template('ShowImage.html', username = username, message = "Bạn chưa upload ảnh")
+        else:
+            images = os.listdir(user_folder)
+            return render_template('ShowImage.html', username = username, images = images)
+    return render_template('ShowImage.html', username = username, message = "Bạn chưa upload ảnh")
     
 @app.route('/About')
 def About():
