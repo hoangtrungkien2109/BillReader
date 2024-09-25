@@ -1,4 +1,4 @@
-from preprocess import *
+# from BillReader.field_detector.preprocess import *
 import re
 import cv2
 import glob
@@ -123,33 +123,3 @@ def rename_file(src_path):
         os.rename(img_path, img_path.split("\\")[0] + "/" + new_name + ".jpg")
         os.rename(ann_path, ann_path.split("\\")[0] + "/" + new_name + ".txt")
         cnt += 1
-
-
-def extract_bill_from_image(img_dir: str, dst_dir: str, extension: str = ".jpg") -> None:
-    image_paths = glob.glob(img_dir + '/*' + extension)
-    for image_path in image_paths:
-        image_filename = image_path.split('\\')[-1]
-        print("Processing image {}".format(image_filename))
-        image = cv2.imread(image_path)
-        image = preprocess(image)
-        cv2.imwrite(dst_dir + "/" + image_filename, image)
-
-
-def find_field_yolo(model_path, src_path):
-    model = YOLO(model_path)
-    results = model.predict(source=src_path, save=True, save_txt=True)
-    return results
-
-
-def train_yolo(yaml_path, runs_path, epochs, pretrained=None):
-    if pretrained:
-        model = YOLO(pretrained)
-    else:
-        model = YOLO("yolov8n.pt")
-    model.train(data=yaml_path, epochs=epochs, resume=True if pretrained else False, project=runs_path)
-
-
-def find_corners(model_path, src_path):
-    model = YOLO(model_path)
-    results = model.predict(source=src_path, save=True, save_txt=True)
-    return results

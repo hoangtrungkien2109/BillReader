@@ -1,7 +1,7 @@
 from torch.utils.data import Dataset
 import os
 import cv2
-import config
+from utils import transform
 
 
 class MyDataLoader(Dataset):
@@ -24,5 +24,5 @@ class MyDataLoader(Dataset):
 
         image = cv2.imread(os.path.join(root_and_dir, img_file))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image = config.transform(image=image)["image"]
+        image = transform(image=image)["image"]
         return image, label

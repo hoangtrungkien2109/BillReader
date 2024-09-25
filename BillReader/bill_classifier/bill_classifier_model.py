@@ -1,10 +1,12 @@
 from torch import nn
 from torch.utils.data import DataLoader
 from load_data import MyDataLoader
-from utils_classifier import *
+from utils import *
 from tqdm import tqdm
 import json
 import cv2
+import glob
+
 
 class ConvBlock(torch.nn.Module):
     def __init__(self, in_channels: int, out_channels: int, use_act: bool = False, use_bn: bool = False, **kwargs):
@@ -51,39 +53,42 @@ class BillClassifier(nn.Module):
         return self.classifier(x)
 
 
-def train_classifier_model(root_dir, model_path=config.CHECKPOINT_PATH, model: BillClassifier | None = None, epochs=10,
-                           lr=config.LEARNING_RATE, num_classes=2):
+def train_classifier_model(root_dir, model_path, model: BillClassifier | None = None, epochs=10,
+                           lr=1e-4, batch=4, load_model=False, device: str | None = None,
+                           num_classes=2, hist_path=None):
     with open('weight/history.json', 'r') as file:
         history = json.load(file)
     if model is None:
         model = BillClassifier(in_channels=3, num_classes=num_classes)
+    if not device:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
     dataloader = MyDataLoader(root_dir)
     initialize_weights(model)
     opt = torch.optim.Adam(model.parameters(), lr=lr, betas=(0.0, 0.9))
     loss_func = nn.CrossEntropyLoss()
-    model.to(config.DEVICE)
+    model.to(device)
     model.train()
     loader = DataLoader(
         dataloader,
-        batch_size=config.BATCH_SIZE,
+        batch_size=batch,
         shuffle=True,
         pin_memory=True,
-        num_workers=config.NUM_WORKERS
+        num_workers=4
     )
-    if config.LOAD_MODEL:
+    if load_model:
         load_checkpoint(
             model_path,
             model,
             opt,
-            config.LEARNING_RATE,
+            lr,
         )
     loop = tqdm(loader, leave=True)
     for epoch in tqdm(range(epochs)):
         running_loss = 0.0
         true_prediction = 0
         for idx, (image, label) in enumerate(loop):
-            image = image.to(config.DEVICE)
-            label = label.to(config.DEVICE)
+            image = image.to(device)
+            label = label.to(device)
             # one_hot_labels = F.one_hot(label, num_classes=num_classes)
             # Zero the parameter gradients
             opt.zero_grad()
@@ -92,7 +97,7 @@ def train_classifier_model(root_dir, model_path=config.CHECKPOINT_PATH, model: B
             outputs = model(image)
             loss = loss_func(outputs, label)
             _, predicted = torch.max(outputs, dim=1)
-            true_prediction += config.BATCH_SIZE - torch.sum(predicted-label)
+            true_prediction += batch - torch.sum(predicted-label)
             # Backward pass and optimize
             loss.backward()
             opt.step()
@@ -100,8 +105,8 @@ def train_classifier_model(root_dir, model_path=config.CHECKPOINT_PATH, model: B
             running_loss += loss.item()
 
         history["loss"].append(running_loss)
-        history["acc"].append((true_prediction / (len(loop) * config.BATCH_SIZE)).item())
-        if config.SAVE_MODEL and (epoch+1) % 5 == 0:
+        history["acc"].append((true_prediction / (len(loop) * batch)).item())
+        if (epoch+1) % 5 == 0:
             print(f"Epoch [{epoch+1}/{epochs}]")
             save_checkpoint(model, opt, filename=model_path)
     save_checkpoint(
@@ -112,27 +117,31 @@ def train_classifier_model(root_dir, model_path=config.CHECKPOINT_PATH, model: B
     hist_json = json.dumps(history, indent=2)
 
     # Writing to sample.json
-    with open("weight/history.json", "w") as outfile:
-        outfile.write(hist_json)
+    if hist_path is not None:
+        with open(hist_path, "w") as outfile:
+            outfile.write(hist_json)
     return history
 
 
-def classify_image(src_path: str, model_path: str, num_classes: int, extension: str = ".jpg"):
+def classify_image(src_path: str, model_path: str, num_classes: int, extension: str = ".jpg",
+                   device: str | None = None, lr=1e-4):
     result = []
     base_model = BillClassifier(in_channels=3, num_classes=num_classes)
-    opt = torch.optim.Adam(base_model.parameters(), lr=config.LEARNING_RATE, betas=(0.0, 0.9))
-    base_model.to(config.DEVICE)
+    opt = torch.optim.Adam(base_model.parameters(), lr=lr, betas=(0.0, 0.9))
+    if device is None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+    base_model.to(device)
     base_model.eval()
     load_checkpoint(
         model_path,
         base_model,
         opt,
-        config.LEARNING_RATE
+        lr
     )
     image_paths = glob.glob(src_path + '/*' + extension)
     for image_path in image_paths:
         image = cv2.imread(image_path)
-        image = config.transform(image=image)['image'].unsqueeze(0).to(config.DEVICE)
+        image = transform(image=image)['image'].unsqueeze(0).to(device)
         with torch.no_grad():
             output = base_model(image)
             _, predicted = torch.max(output, dim=1)
