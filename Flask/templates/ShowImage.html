@@ -16,7 +16,7 @@
         <table>
             {% for image in images %}
                 <p>Image</p>
-                <img src="{{ url_for('static', filename='image_user/'+ username +  '/Label/' + image) }}" alt="{{image}}"></img>
+                <img src="{{ url_for('static', filename='Image/' + username+'/' +image) }}" alt="{{image}}"></img>
                 </br>
                 <a href="{{ url_for('Save', filename= image) }}">Lưu ảnh</a>
                 
