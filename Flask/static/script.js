@@ -10,7 +10,7 @@ window.onload = function() {
     img.src = imagePath;  
     imageName1 = img.src.split('/').pop();
     imageFilename = imageName1.split('.')[0];
-
+    // bill_type  = 
     img.onload = function() {
         canvas.width = img.width;
         canvas.height = img.height;
