@@ -12,6 +12,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
 app.secret_key = "123"
 app.permanent_session_lifetime = timedelta(minutes=5)
 
@@ -38,8 +39,9 @@ def home():
         username = 'Guest'
     return render_template("index.html", username=username)
 
+
 @app.route('/Login', methods=['GET', 'POST'])
-def Login():
+def login():
     if request.method == 'POST':
         username = request.form["username"]
         password = request.form["password"]
@@ -51,11 +53,12 @@ def Login():
             flash('Đăng nhập thành công!')
             return redirect('/')
         else:
-            return render_template('Login.html',message = 'Tên đăng nhập hoặc mật khẩu không đúng')
+            return render_template('Login.html',message='Tên đăng nhập hoặc mật khẩu không đúng')
     return render_template('Login.html')
 
-@app.route('/Signup', methods=['GET', 'POST'])
-def Signup():
+
+@app.route('/SignUp', methods=['GET', 'POST'])
+def signup():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -68,13 +71,15 @@ def Signup():
             return render_template('Signup.html', message='Đăng ký thành công!')
     return render_template('Signup.html')
 
+
 @app.route("/Logout")
 def logout():
     session.pop("username", None)
     return render_template('Login.html', message='Đăng xuất thành công!')
 
+
 @app.route('/Upload/<username>', methods=['GET', 'POST'])
-def Upload_file(username):
+def upload_file(username):
     if "username" not in session:
         return render_template('Login.html', message="Bạn chưa đăng nhập")
     username = session["username"]
@@ -165,15 +170,18 @@ def Show_Image(BillType):
                 images.append(image_name)
             return render_template('ShowImage.html', username=username, images=images)
 
+
 @app.route('/About')
-def About():
+def about():
     return render_template("About.html")
 
+
 @app.route('/Save/<filename>')
-def Save(filename):
+def save(filename):
     username = session["username"]
     path = "Image/" + username + '/'
     return send_file(path + filename, as_attachment=True)
+
 
 @app.route('/draw/<image_name>')
 def draw(image_name):
@@ -185,6 +193,7 @@ def draw(image_name):
         return render_template('DrawImage.html', username=username, image_path=image_path)
     return redirect(url_for('Login'))
 
+
 @app.route('/save-coordinates', methods=['POST'])
 def save_coordinates():
     username = session['username']
@@ -194,7 +203,7 @@ def save_coordinates():
     if not image_name or not coordinates:
         return jsonify({'error': 'Invalid data'}), 400
 
-    directory = os.path.join("Image",username)
+    directory = os.path.join("Image", username)
     if not os.path.exists(directory):
         os.makedirs(directory)
     filename = os.path.join(directory, f"{image_name}.txt")
@@ -205,7 +214,10 @@ def save_coordinates():
     
     Coord_image = {'user': username, 'Type': 'Coordinate','Image_name':f"{image_name}.txt", 'path': filename}
     users.insert_one(Coord_image)
+    coord_image = {'user': username, 'Type': 'Coordinate', 'Image_name': f"{image_name}.txt", 'path': filename}
+    users.insert_one(coord_image)
     return jsonify({'message': 'Coordinates saved successfully!'}), 200
+
 
 if __name__ == "__main__":
     app.run(debug=True)
