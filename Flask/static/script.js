@@ -3,6 +3,7 @@ window.onload = function() {
     let ctx = canvas.getContext('2d');
     let img = new Image();
     let clickCount = 0;
+    let class_count = 0;
     let rectStart = null;
     let coordinates = [];  // Store all rectangle coordinates
 
@@ -23,9 +24,10 @@ window.onload = function() {
         ctx.strokeStyle = 'red';
         ctx.lineWidth = 2;
         coordinates.forEach(function(coord) {
-            let width = coord.x2 - coord.x1;
-            let height = coord.y2 - coord.y1;
-            ctx.strokeRect(coord.x1, coord.y1, width, height);  // Redraw rectangles
+            // let width = coord.x2 - coord.x1;
+            // let height = coord.y2 - coord.y1;
+            ctx.strokeRect((coord.x - coord.width / 2) * img.width, (coord.y - coord.height / 2) * img.height,
+                coord.width * img.width, coord.height * img.height);  // Redraw rectangles
         });
     }
 
@@ -45,11 +47,13 @@ window.onload = function() {
             
             // Add new rectangle to coordinates array
             coordinates.push({
-                x1: rectStart.x, 
-                y1: rectStart.y, 
-                x2: rectEnd.x, 
-                y2: rectEnd.y
+                class: Math.trunc(class_count / 2),
+                x: ((rectStart.x + rectEnd.x) / 2) / img.width,
+                y: ((rectStart.y + rectEnd.y) / 2) / img.height,
+                width: (Math.abs(rectEnd.x - rectStart.x)) / img.width,
+                height: (Math.abs(rectEnd.y - rectStart.y)) / img.height
             });
+            class_count += 1;
 
             // Redraw the canvas with all rectangles
             redrawAll();
