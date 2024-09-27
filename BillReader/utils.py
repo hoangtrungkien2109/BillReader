@@ -8,7 +8,6 @@ import numpy
 import random
 import os
 import shutil
-from ultralytics import YOLO
 from multiprocessing import Process
 
 

@@ -1,9 +1,8 @@
 from flask import Flask, redirect, url_for, render_template, request, session, flash, send_file, jsonify
 import os, cv2
 from datetime import timedelta
-from pymongo import MongoClient
 from werkzeug.utils import secure_filename
-
+from Flask.database import db, users, accounts, bills
 import numpy as np
 import yaml
 import shutil
@@ -15,54 +14,34 @@ from BillReader.field_detector.value_extractor import (retrieve_values_from_coor
                                                        find_field_yolo, train_yolo, extract_bill_from_image,
                                                        split_field_value_from_annotation, find_average_value_coordinate)
 
-
 app = Flask(__name__)
+app.secret_key = os.urandom(24)
 app._static_folder = ''
-app.config['UPLOAD_FOLDER'] = 'Image'
+app.config['UPLOAD_FOLDER'] = 'image'
 app.config['TRAIN_FOLDER'] = 'training_model_temp_folder'
 app.config['MODEL_FOLDER'] = 'models'
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 # bill_types=['Bill1','Bill2','Bill3']
+
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 app.permanent_session_lifetime = timedelta(minutes=100)
 
-# Thiết lập kết nối MongoDB
-uri = "mongodb+srv://hoangtrungkien4:R22QsguGNpBfTHlw@billreader.kc3jt.mongodb.net/?retryWrites=true&w=majority&appName=BillReader"
-client = MongoClient(uri)
-
-db = client['my_database']
-accounts = db['account']
-users = db['user']
-
-# Thiết lập kết nối MongoDB
-# client = MongoClient('mongodb://localhost:27017/')
-uri = "mongodb+srv://tnchau23823:abc13579@cluster0.fs6jd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-# uri = "mongodb+srv://hoangtrungkien4:R22QsguGNpBfTHlw@billreader.kc3jt.mongodb.net/?retryWrites=true&w=majority&appName=BillReader"
-client = MongoClient(uri)
-# try:
-#     client.admin.command('ping')
-#     print("Pinged your deployment. You successfully connected to MongoDB!")
-# except Exception as e:
-#     print(e)
-db = client['my_database']
-accounts = db['account']
-users = db['user']
-bills = db['bill']
 
 @app.route("/")
 def home():
     if "username" in session:
         username = session["username"]
     else:
-        username = 'Guest'
+        username = 'guest'
     return render_template("index.html", username=username)
 
 
-@app.route('/Login', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form["username"]
@@ -75,77 +54,77 @@ def login():
             flash('Đăng nhập thành công!')
             return redirect('/')
         else:
-            return render_template('Login.html',message='Tên đăng nhập hoặc mật khẩu không đúng')
-    return render_template('Login.html')
+            return render_template('login.html',message='Tên đăng nhập hoặc mật khẩu không đúng')
+    return render_template('login.html')
 
 
-@app.route('/Signup', methods=['GET', 'POST'])
-def Signup():
+@app.route('/sign_up', methods=['GET', 'POST'])
+def sign_up():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         # Thêm người dùng mới vào MongoDB
         if accounts.find_one({'username': username}):
-            return render_template('Signup.html', message='Tài khoản đã tồn tại')
+            return render_template('sign_up.html', message='Tài khoản đã tồn tại')
         else:
             new_user = {'username': username, 'password': password}
             accounts.insert_one(new_user)
-            return render_template('Signup.html', message='Đăng ký thành công!')
-    return render_template('Signup.html')
+            return render_template('sign_up.html', message='Đăng ký thành công!')
+    return render_template('sign_up.html')
 
 
-@app.route("/Logout")
+@app.route("/logout")
 def logout():
     session.pop("username", None)
-    return render_template('Login.html', message='Đăng xuất thành công!')
+    return render_template('login.html', message='Đăng xuất thành công!')
 
 
-@app.route('/Upload/<username>', methods=['GET', 'POST'])
+@app.route('/upload/<username>', methods=['GET', 'POST'])
 def upload_file(username):
     if "username" not in session:
-        return render_template('Login.html', message="Bạn chưa đăng nhập")
+        return render_template('login.html', message="Bạn chưa đăng nhập")
     username = session["username"]
 
-    find_bill = bills.find({'User': username})
+    find_bill = bills.find({'user': username})
     bill_types = []
     for bill_doc in find_bill:
-        billtype = bill_doc['BillType']
+        billtype = bill_doc['bill_type']
         bill_types.append(billtype)
     print(bill_types)
     if request.method == 'POST':
         if 'file' not in request.files:
-            return render_template('Upload.html', username=username, message="Chọn file để upload", bill_types=bill_types)
+            return render_template('upload.html', username=username, message="Chọn file để upload", bill_types=bill_types)
 
         file = request.files['file']
         if file.filename == '':
-            return render_template('Upload.html', username=username, message="Chọn file để upload", bill_types=bill_types)
+            return render_template('upload.html', username=username, message="Chọn file để upload", bill_types=bill_types)
 
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
 
             # Check for new bill type first, then existing bill type
-            bill_type = request.form.get('NewBillType')
+            bill_type = request.form.get('new_bill_type')
             if bill_type is None:
                 bill_type = request.form.get('bill_type')
 
             if bill_type is None:
-                return render_template('Upload.html', username=username, message="Chọn loại hóa đơn", bill_types=bill_types)
-            image_count = users.count_documents({'user': username, 'Type': 'Label', 'Bill_type': bill_type})
+                return render_template('upload.html', username=username, message="Chọn loại hóa đơn", bill_types=bill_types)
+            image_count = users.count_documents({'user': username, 'type': 'label', 'bill_type': bill_type})
             if image_count < 5:
                 label_image = {
                 'user': username,
-                'Bill_type': bill_type,
-                'Type': 'Label',
-                'Image_name': filename,
+                'bill_type': bill_type,
+                'type': 'label',
+                'image_name': filename,
                 'path': os.path.join(app.config['UPLOAD_FOLDER'], username, filename),
                 'coordinate': []
                 }
                 users.insert_one(label_image)
             train_image = {
                 'user': username,
-                'Bill_type': bill_type,
-                'Type': 'Train',
-                'Image_name': filename,
+                'bill_type': bill_type,
+                'type': 'train',
+                'image_name': filename,
                 'path': os.path.join(app.config['UPLOAD_FOLDER'], username, filename)
             }
             users.insert_one(train_image)
@@ -154,55 +133,56 @@ def upload_file(username):
                 os.makedirs(image_folder)
             try:
                 file.save(os.path.join(image_folder, filename))
-                if not bills.find_one({'User': username, 'BillType': bill_type}):
-                    bills.insert_one({'User': username, 'BillType': bill_type})
+                if not bills.find_one({'user': username, 'bill_type': bill_type}):
+                    bills.insert_one({'user': username, 'bill_type': bill_type})
                     if bill_type != None:
                         bill_types.append(bill_type)
-                return render_template('Upload.html', username=username, message="Upload thành công", bill_types=bill_types)
+                return render_template('upload.html', username=username, message="Upload thành công", bill_types=bill_types)
             except Exception as e:
                 print(f"Error uploading file: {e}")
-                return render_template('Upload.html', username=username, message="Có lỗi xảy ra khi upload file", bill_types=bill_types)
+                return render_template('upload.html', username=username, message="Có lỗi xảy ra khi upload file", bill_types=bill_types)
 
-    return render_template('Upload.html', username=username, bill_types=bill_types)
+    return render_template('upload.html', username=username, bill_types=bill_types)
 
-@app.route('/SelectFill/<username>')
-def Select_Fill(username):
+@app.route('/select_bill/<username>')
+def select_bill(username):
     if "username" not in session:
-        return render_template("Login.html", username=username, message='Bạn chưa đăng nhập')
+        return render_template("login.html", username=username, message='Bạn chưa đăng nhập')
     else:
         username = session["username"]
-        bill_list = bills.find({'User': username})
-        return render_template('SelectFill.html', bill_list=bill_list)   
-     
-@app.route('/Bill/<BillType>')
-def Show_Image(BillType):
+        bill_list = bills.find({'user': username})
+        return render_template('select_bill.html', bill_list=bill_list)
+
+
+@app.route('/bill/<bill_type>')
+def show_image(bill_type):
     if "username" not in session:
-        return render_template("Login.html", message='Bạn chưa đăng nhập')
+        return render_template("login.html", message='Bạn chưa đăng nhập')
     else:
         username = session['username']
-        imageCount = users.count_documents({'user' : username,'Bill_type': BillType, 'Type' : 'Label'})
-        if imageCount == 0:
-            return render_template('ShowImage.html', username=username, message="Bạn chưa upload ảnh")
+        image_count = users.count_documents({'user' : username,'bill_type': bill_type, 'type' : 'label'})
+        if image_count == 0:
+            return render_template('show_image.html', username=username, message="Bạn chưa upload ảnh")
         else:
-            images_list = users.find({'user' : username,'Bill_type': BillType, 'Type' : 'Label'})
+            images_list = users.find({'user' : username,'bill_type': bill_type, 'type' : 'label'})
             images = []
             for image_doc in images_list:
                 image_path = image_doc['path']
                 print(image_path)
                 image_name = image_path.split('\\').pop()
                 images.append(image_name)
-            return render_template('ShowImage.html', username=username, images=images)
+            return render_template('show_image.html', username=username, images=images)
 
 
-@app.route('/About')
+@app.route('/about')
 def about():
-    return render_template("About.html")
+    return render_template("about.html")
 
 
-@app.route('/Save/<filename>')
+@app.route('/save/<filename>')
 def save(filename):
     username = session["username"]
-    path = "Image/" + username + '/'
+    path = "image/" + username + '/'
     return send_file(path + filename, as_attachment=True)
 
 
@@ -210,23 +190,23 @@ def save(filename):
 def draw(image_name):
     if 'username' in session:
         username = session['username']
-        image_path = f'/static/Image/{username}/{image_name}'
+        image_path = f'/static/image/{username}/{image_name}'
         # bill = bills.find_one({'Image_name': image_name})
         # bill_type = bill['BillType']  # Giả sử BillType nằm trong trường 'BillType' của bill
-        return render_template('DrawImage.html', username=username, image_path=image_path)
-    return redirect(url_for('Login'))
+        return render_template('draw_image.html', username=username, image_path=image_path)
+    return redirect(url_for('login'))
 
 
 @app.route('/save-coordinates', methods=['POST'])
 def save_coordinates():
     username = session['username']
     data = request.get_json()
-    image_name = data.get('imageName')
+    image_name = data.get('image_name')
     coordinates = data.get('coordinates')
     if not image_name or not coordinates:
         return jsonify({'error': 'Invalid data'}), 400
 
-    directory = os.path.join("Image", username)
+    directory = os.path.join("image", username)
     if not os.path.exists(directory):
         os.makedirs(directory)
     filename = os.path.join(directory, f"{image_name}.txt")
@@ -239,10 +219,10 @@ def save_coordinates():
             else:
                 coord_cloud[str(coord['class'])] = f"{coord['x'] - coordinates[i-1]['x']}_{coord['y'] - coordinates[i-1]['x']}_{coord['width']}_{coord['height']}"
     print(coord_cloud)
-    coord_image = {'user': username, 'Type': 'Coordinate', 'Image_name': f"{image_name}.txt", 'path': filename}
+    coord_image = {'user': username, 'type': 'coordinate', 'image_name': f"{image_name}.txt", 'path': filename}
     users.insert_one(coord_image)
 
-    query = {"user": username, "Image_name": {"$regex": f"^{image_name}.*", "$options": "i"}, "Type": "Label"}
+    query = {"user": username, "image_name": {"$regex": f"^{image_name}.*", "$options": "i"}, "type": "label"}
     new_values = {"$set": {"values": coord_cloud}}
     users.update_one(query, new_values)
     return jsonify({'message': 'Coordinates saved successfully!'}), 200
@@ -281,8 +261,8 @@ def train_detect_field(class_list):
         yaml.dump(content, f)
 
     # Copy original image to temporary folder
-    image_list = users.find({'user': username, 'Type': 'Label'})
-    ann_list = users.find({'user': username, 'Type': 'Coordinate'})
+    image_list = users.find({'user': username, 'type': 'label'})
+    ann_list = users.find({'user': username, 'type': 'coordinate'})
     for image, ann in zip(image_list, ann_list):
         shutil.copy(image['path'], origin_folder)
         shutil.copy(ann['path'], origin_folder)
@@ -293,7 +273,7 @@ def train_detect_field(class_list):
         starts=[0, 3],
         ends=[4, 5]
     )
-    images_list = users.find({'user': username, 'Type': 'Label'})
+    images_list = users.find({'user': username, 'type': 'label'})
     average_values_coords = []
     for _class in class_list:
         values_coords = []
@@ -324,6 +304,7 @@ def train_detect_field(class_list):
         retrieve_values_from_coordinates(app.config['UPLOAD_FOLDER'] + '/' + username, "result",
                                          field_coords, average_values_coords, classes=['0', '1'])
         return render_template("index.html", username=username)
+
 
 if __name__ == "__main__":
     app.run(debug=True)

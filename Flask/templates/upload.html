@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Image</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Upload an image</h1>
+    <form method="POST" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <p></p>
+        <label for="bill_type">Loại hóa đơn:</label>
+        <select name="bill_type" id="bill_type">
+            {% for type in bill_types %}
+                <option value="{{ type }}">{{ type }}</option>
+            {% endfor %}
+        </select>
+        <p>Nếu chưa có loại bill, hãy thêm loại bill mới</p>
+        <input type ='text' id="new_bill_type" name="new_bill_type">
+        <p></p>
+        <input type="submit" name="submit" value="upload">
+    </form>
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+    <a href="/">Quay lại</a>
+</body>
+</html>

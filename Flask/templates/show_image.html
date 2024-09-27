@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Danh sách ảnh</title>
+    <style>
+        img {
+        width: 800px; 
+        height: auto; 
+        }
+    </style>
+
+</head>
+<body>
+    <h1>Danh sách ảnh đã upload</h1>
+    <ul>
+        <table>
+            {% for image in images %}
+                <p>Image</p>
+                <img src="{{ url_for('static', filename='image/' + username + '/' + image) }}" alt="{{image}}"></img>
+                </br>
+                <a href="{{ url_for('save', filename= image) }}">Lưu ảnh</a>
+                
+                <a href="{{ url_for('draw', image_name=image) }}">Draw</a>
+            {% endfor %}
+        </table>
+        <p>{{ message }}</p>
+        <a href="{{ url_for('train_detect_field', class_list='0_1') }}">Train model</a>
+        <a href="/select_bill/{{username}}">Quay lại</a>
+    </ul>
+</body>
+</html>
