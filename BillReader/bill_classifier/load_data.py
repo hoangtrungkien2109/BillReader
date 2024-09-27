@@ -1,7 +1,7 @@
 from torch.utils.data import Dataset
 import os
 import cv2
-from utils import transform
+from BillReader.bill_classifier.utils import transform
 
 
 class MyDataLoader(Dataset):

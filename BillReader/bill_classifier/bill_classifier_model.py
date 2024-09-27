@@ -1,7 +1,7 @@
 from torch import nn
 from torch.utils.data import DataLoader
-from load_data import MyDataLoader
-from utils import *
+from BillReader.bill_classifier.load_data import MyDataLoader
+from BillReader.bill_classifier.utils import *
 from tqdm import tqdm
 import json
 import cv2
