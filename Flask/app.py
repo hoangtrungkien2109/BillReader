@@ -113,13 +113,12 @@ def upload_file(username):
 
             # Check for new bill type first, then existing bill type
             bill_type = request.form.get('new_bill_type') or request.form.get('bill_type')
-
-            if bill_type is None:
-                return render_template('upload.html', username=username, message="Chọn loại hóa đơn", bill_types=bill_types)
-
             if bill_type is None:
                 return render_template('upload.html', username=username, message="Chọn loại hóa đơn", bill_types=bill_types)
             image_count = users.count_documents({'user': username, 'type': 'label', 'bill_type': bill_type})
+            find_image_name = users.find_one({'user': username,'image_name' : filename})
+            if find_image_name:
+                return render_template('upload.html', username=username, message="Ảnh đã được tải lên", bill_types=bill_types)
             if image_count < 5:
                 label_image = {
                 'user': username,
