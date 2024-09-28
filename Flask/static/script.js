@@ -72,7 +72,7 @@ window.onload = function() {
             },
             body: JSON.stringify({
               coordinates: coordinates,  // Send all rectangles
-              imageName: imageFilename
+              image_name: imageFilename
             })
           })
           .then(response => response.json())

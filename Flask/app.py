@@ -2,24 +2,33 @@ from flask import Flask, redirect, url_for, render_template, request, session, f
 import os, cv2
 from datetime import timedelta
 from werkzeug.utils import secure_filename
-from Flask.database import db, users, accounts, bills
+# from Flask.database import db, users, accounts, bills
 import numpy as np
 import yaml
 import shutil
-from BillReader.utils import multiprocess_augment
-from BillReader.bill_classifier.bill_classifier_model import train_classifier_model, classify_image
-from BillReader.corner_detector.corner_detector import detect_corner
-from BillReader.field_detector.value_extractor import (retrieve_values_from_coordinates, find_value_coordinate,
-                                                       detect_value_box, get_value_coordinates_from_annotation_file,
-                                                       find_field_yolo, train_yolo, extract_bill_from_image,
-                                                       split_field_value_from_annotation, find_average_value_coordinate)
+# from BillReader.utils import multiprocess_augment
+# from BillReader.bill_classifier.bill_classifier_model import train_classifier_model, classify_image
+# from BillReader.corner_detector.corner_detector import detect_corner
+# from BillReader.field_detector.value_extractor import (retrieve_values_from_coordinates, find_value_coordinate,
+#                                                        detect_value_box, get_value_coordinates_from_annotation_file,
+#                                                        find_field_yolo, train_yolo, extract_bill_from_image,
+#                                                        split_field_value_from_annotation, find_average_value_coordinate)
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 app._static_folder = ''
-app.config['UPLOAD_FOLDER'] = 'image'
+app.config['UPLOAD_FOLDER'] = 'Flask/image'
 app.config['TRAIN_FOLDER'] = 'training_model_temp_folder'
 app.config['MODEL_FOLDER'] = 'models'
+from pymongo import MongoClient
+
+uri = "mongodb+srv://hoangtrungkien4:R22QsguGNpBfTHlw@billreader.kc3jt.mongodb.net/?retryWrites=true&w=majority&appName=BillReader"
+client = MongoClient(uri)
+
+db = client['my_database']
+accounts = db['account']
+users = db['user']
+bills = db['bill']
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 # bill_types=['Bill1','Bill2','Bill3']
@@ -103,9 +112,10 @@ def upload_file(username):
             filename = secure_filename(file.filename)
 
             # Check for new bill type first, then existing bill type
-            bill_type = request.form.get('new_bill_type')
+            bill_type = request.form.get('new_bill_type') or request.form.get('bill_type')
+
             if bill_type is None:
-                bill_type = request.form.get('bill_type')
+                return render_template('upload.html', username=username, message="Chọn loại hóa đơn", bill_types=bill_types)
 
             if bill_type is None:
                 return render_template('upload.html', username=username, message="Chọn loại hóa đơn", bill_types=bill_types)
@@ -171,6 +181,7 @@ def show_image(bill_type):
                 print(image_path)
                 image_name = image_path.split('\\').pop()
                 images.append(image_name)
+                print(images)
             return render_template('show_image.html', username=username, images=images)
 
 
@@ -180,7 +191,7 @@ def about():
 
 
 @app.route('/save/<filename>')
-def save(filename):
+def save_image(filename):
     username = session["username"]
     path = "image/" + username + '/'
     return send_file(path + filename, as_attachment=True)
@@ -191,9 +202,9 @@ def draw(image_name):
     if 'username' in session:
         username = session['username']
         image_path = f'/static/image/{username}/{image_name}'
-        # bill = bills.find_one({'Image_name': image_name})
-        # bill_type = bill['BillType']  # Giả sử BillType nằm trong trường 'BillType' của bill
-        return render_template('draw_image.html', username=username, image_path=image_path)
+        bill = users.find_one({'image_name': image_name})
+        bill_type = bill['bill_type']  # Giả sử BillType nằm trong trường 'BillType' của bill
+        return render_template('draw_image.html', username=username,bill_type=bill_type, image_path=image_path)
     return redirect(url_for('login'))
 
 
@@ -206,12 +217,15 @@ def save_coordinates():
     if not image_name or not coordinates:
         return jsonify({'error': 'Invalid data'}), 400
 
-    directory = os.path.join("image", username)
+    directory = os.path.join(app.config['UPLOAD_FOLDER'], username)
     if not os.path.exists(directory):
         os.makedirs(directory)
     filename = os.path.join(directory, f"{image_name}.txt")
+    # print(filename)
     coord_cloud = {}
-
+    find_bill_type = users.find_one({'user':username,"image_name": {"$regex": f"^{image_name}.*", "$options": "i"}})
+    bill_type = find_bill_type['bill_type']
+    # print(find_bill_type)
     with open(filename, 'w') as f:
         for i, coord in enumerate(coordinates):
             if i % 2 == 0:
@@ -219,7 +233,7 @@ def save_coordinates():
             else:
                 coord_cloud[str(coord['class'])] = f"{coord['x'] - coordinates[i-1]['x']}_{coord['y'] - coordinates[i-1]['x']}_{coord['width']}_{coord['height']}"
     print(coord_cloud)
-    coord_image = {'user': username, 'type': 'coordinate', 'image_name': f"{image_name}.txt", 'path': filename}
+    coord_image = {'user': username, 'bill_type':bill_type, 'type': 'coordinate', 'image_name': f"{image_name}.txt", 'path': filename}
     users.insert_one(coord_image)
 
     query = {"user": username, "image_name": {"$regex": f"^{image_name}.*", "$options": "i"}, "type": "label"}
