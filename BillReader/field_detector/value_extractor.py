@@ -40,6 +40,7 @@ def find_average_value_coordinate(value_boxes):
         average_value_coordinate[2:] = average_value_coordinate[2:] + np.array(value[2:])
     for idx in range(len(average_value_coordinate)):
         average_value_coordinate[idx] /= float(len(value_boxes))
+    print(value_boxes_temp[0], average_value_coordinate)
     return average_value_coordinate.tolist()
 
 
@@ -101,7 +102,9 @@ def retrieve_values_from_coordinates(src_path, dst_path, field_coordinates, aver
             for i in range(len(classes)):
                 field_box = field_coordinates[i][idx]
                 value_box = detect_value_box(field_box, average_values_coordinate[i], multiplier=1.2)
+                print("1:", field_box, average_values_coordinate[0], value_box)
                 field_box, value_box = denormalize(image, field_box, value_box)
+                print("2:", field_box, average_values_coordinate[0], value_box)
                 x_val, y_val, w_val, h_val = value_box
 
                 # Need to process the result
@@ -109,6 +112,10 @@ def retrieve_values_from_coordinates(src_path, dst_path, field_coordinates, aver
                     image[y_val-h_val//2:y_val+h_val//2, x_val-w_val//2:x_val+w_val//2],
                     config=config
                 )
+                cv2.rectangle(image, (x_val-w_val//2, y_val-h_val//2), (x_val+w_val//2, y_val+h_val//2),
+                              (255, 0, 0), 3)
+                cv2.imwrite("result/" + image_name.split(".")[0] + ".png", image)
+                print(result)
                 values[classes[i]] = result
             # json.dump(values)
             f.write(json.dumps(values))
@@ -136,9 +143,9 @@ def extract_bill_from_image(img_dir: str, dst_dir: str, extension: str = ".jpg")
         cv2.imwrite(dst_dir + "/" + image_filename, image)
 
 
-def find_field_yolo(model_path, src_path):
+def find_field_yolo(model_path, src_path, save=False):
     model = YOLO(model_path)
-    results = model.predict(source=src_path, save=True, save_txt=True)
+    results = model.predict(source=src_path, save=save, save_txt=save)
     return results
 
 
