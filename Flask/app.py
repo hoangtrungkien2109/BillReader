@@ -198,6 +198,15 @@ def save_image(filename):
     return send_file(path + filename, as_attachment=True)
 
 
+@app.route('/save_result/<filename>')
+def save_result(filename):
+    path = os.path.join('result')
+    txt_filename = filename.split('.')[0] + '.txt'
+    file_path = os.path.join(path, txt_filename)
+    print(file_path)
+    return send_file(file_path, as_attachment=True)
+
+
 @app.route('/draw/<image_name>')
 def draw(image_name):
     if 'username' in session:
@@ -241,6 +250,37 @@ def save_coordinates():
     new_values = {"$set": {"values": coord_cloud}}
     users.update_one(query, new_values)
     return jsonify({'message': 'Coordinates saved successfully!'}), 200
+
+
+@app.route('/select_bill_result/<username>')
+def select_bill_result(username):
+    if 'username' not in session:
+        return render_template('login.html', username = username, message = 'Bạn chưa đăng nhập')
+    else:
+        username = session['username']
+        bill_list = bills.find({'user': username})
+        return render_template('select_bill_result.html', bill_list=bill_list)
+
+
+@app.route('/result/<bill_type>')
+def show_result(bill_type):
+    if "username" not in session:
+        return render_template("login.html", message='Bạn chưa đăng nhập')
+    else:
+        username = session['username']
+        image_count = users.count_documents({'user' : username,'bill_type': bill_type, 'type' : 'train'})
+        if image_count == 0:
+            return render_template('show_result.html', username=username, message="Bạn chưa upload ảnh")
+        else:
+            images_list = users.find({'user' : username,'bill_type': bill_type, 'type' : 'train'})
+            images = []
+            for image_doc in images_list:
+                image_path = image_doc['path']
+                print(image_path)
+                image_name = image_path.split('\\').pop()
+                images.append(image_name)
+                print(images)
+            return render_template('show_result.html', username=username, images=images)
 
 
 @app.route('/train_detect_field/<class_list>')
