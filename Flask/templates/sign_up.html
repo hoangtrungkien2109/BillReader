@@ -1,12 +1,113 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng ký</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* General body styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Page title */
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        /* Form container styling */
+        form {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
+
+        /* Label styling */
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #333;
+            text-align: left;
+        }
+
+        /* Input fields styling */
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+
+        /* Button styling */
+        button[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #218838;
+        }
+
+        /* Message styling */
+        p {
+            color: #555;
+            margin-top: 15px;
+        }
+
+        /* "Quay lại" link styling */
+        a {
+            display: inline-block;
+            margin-top: 10px;
+            color: #007bff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: #0056b3;
+        }
+
+        /* Responsive design */
+        @media (max-width: 400px) {
+            form {
+                width: 90%;
+            }
+        }
+
+    </style>
 </head>
 <body>
-    <h1>Đăng ký</h1>
     <form method="POST" action="/sign_up">
         <label for="username">Tên đăng nhập:</label>
         <input type="text" id="username" name="username" required>
@@ -14,7 +115,7 @@
         <label for="password">Mật khẩu:</label>
         <input type="password" id="password" name="password" required>
         <br>
-        <button type="Submit">Đăng ký</button>
+        <button type="submit">Đăng ký</button>
         <p>{{ message }}</p>
         <a href="/">Quay lại</a>
     </form>
