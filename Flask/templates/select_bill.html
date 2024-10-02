@@ -1,7 +1,89 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Danh sách hóa đơn</title>
+    <style>
+        /* General body styling */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
+
+        /* Page title */
+        h1 {
+            color: #343a40;
+            margin-bottom: 20px;
+        }
+
+        /* Styling for the list of bills */
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 15px;
+        }
+
+        /* Styling the links to bills */
+        ul li a {
+            display: inline-block;
+            text-decoration: none;
+            color: #007bff;
+            font-size: 18px;
+            font-weight: bold;
+            border: 2px solid #007bff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        ul li a:hover {
+            background-color: #007bff;
+            color: white;
+        }
+
+        /* Styling the "Quay lại" link */
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #343a40;
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 2px solid #343a40;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .back-link:hover {
+            background-color: #343a40;
+            color: white;
+        }
+
+        /* Responsive design */
+        @media (max-width: 600px) {
+            ul li a {
+                font-size: 16px;
+                padding: 8px 16px;
+            }
+
+            .back-link {
+                font-size: 16px;
+                padding: 8px 16px;
+            }
+        }
+
+    </style>
 </head>
 <body>
     <h1>Danh sách hóa đơn của bạn</h1>
@@ -9,7 +91,7 @@
         {% for bill in bill_list %}
         <li><a href="{{ url_for('show_image', bill_type=bill['bill_type']) }}">{{ bill['bill_type'] }}</a></li>
         {% endfor %}
-        <a href="/">Quay lại</a>
     </ul>
+    <a href="/" class="back-link">Quay lại</a>
 </body>
 </html>

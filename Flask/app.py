@@ -1,5 +1,5 @@
 from flask import Flask, redirect, url_for, render_template, request, session, flash, send_file, jsonify
-import os, cv2
+import os, cv2, json
 from datetime import timedelta
 from werkzeug.utils import secure_filename
 # from Flask.database import db, users, accounts, bills
@@ -96,10 +96,14 @@ def upload_file(username):
 
     find_bill = bills.find({'user': username})
     bill_types = []
+    bill_images = {}
     for bill_doc in find_bill:
         billtype = bill_doc['bill_type']
         bill_types.append(billtype)
-    print(bill_types)
+        image = users.find_one({'user': username, 'bill_type': billtype, 'type': 'train'})
+        if image:
+            bill_images[billtype] = image['path']
+    print(bill_images)
     if request.method == 'POST':
         if 'file' not in request.files:
             return render_template('upload.html', username=username, message="Chọn file để upload", bill_types=bill_types)
@@ -151,7 +155,7 @@ def upload_file(username):
                 print(f"Error uploading file: {e}")
                 return render_template('upload.html', username=username, message="Có lỗi xảy ra khi upload file", bill_types=bill_types)
 
-    return render_template('upload.html', username=username, bill_types=bill_types)
+    return render_template('upload.html', username=username, bill_types=bill_types, bill_images=bill_images)
 
 @app.route('/select_bill/<username>')
 def select_bill(username):
@@ -210,7 +214,7 @@ def draw(image_name):
     if 'username' in session:
         username = session['username']
         image_path = f'/static/image/{username}/{image_name}'
-        bill = users.find_one({'image_name': image_name})
+        bill = users.find_one({'user':username, 'image_name': image_name})
         bill_type = bill['bill_type']  # Giả sử BillType nằm trong trường 'BillType' của bill
         return render_template('draw_image.html', username=username,bill_type=bill_type, image_path=image_path)
     return redirect(url_for('login'))
