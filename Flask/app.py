@@ -134,15 +134,13 @@ def upload_file(username):
             try:
                 file_bytes = np.frombuffer(file.read(), np.uint8)
                 img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-                img = detect_corner(
+                img_detect = detect_corner(
                     "models/corner_detector.pt",
                     img_path=img,
                     dst_path=os.path.join(image_folder, filename)
                 )
-                print(type(img), "img: ", img)
-                if img is None:
-                    print("No image found")
-                    file.save(os.path.join(image_folder, filename))
+                if img_detect is None:
+                    cv2.imwrite(os.path.join(image_folder, filename), img)
                 if not bills.find_one({'user': username, 'bill_type': bill_type}):
                     bills.insert_one({'user': username, 'bill_type': bill_type})
                     if bill_type is not None:
@@ -171,11 +169,11 @@ def show_image(bill_type):
         return render_template("login.html", message='Bạn chưa đăng nhập')
     else:
         username = session['username']
-        image_count = users.count_documents({'user' : username,'bill_type': bill_type, 'type' : 'label'})
+        image_count = users.count_documents({'user': username,'bill_type': bill_type, 'type' : 'label'})
         if image_count == 0:
             return render_template('show_image.html', username=username, message="Bạn chưa upload ảnh")
         else:
-            images_list = users.find({'user' : username,'bill_type': bill_type, 'type' : 'label'})
+            images_list = users.find({'user': username,'bill_type': bill_type, 'type' : 'label'})
             images = []
             for image_doc in images_list:
                 image_path = image_doc['path']
@@ -212,7 +210,7 @@ def draw(image_name):
     if 'username' in session:
         username = session['username']
         image_path = f'/static/image/{username}/{image_name}'
-        bill = users.find_one({'image_name': image_name})
+        bill = users.find_one({'user': username, 'image_name': image_name})
         bill_type = bill['bill_type']  # Giả sử BillType nằm trong trường 'BillType' của bill
         return render_template('draw_image.html', username=username,bill_type=bill_type, image_path=image_path)
     return redirect(url_for('login'))
@@ -329,13 +327,11 @@ def train_detect_field(class_list):
     #     ends=[4, 5]
     # )
     images_list = users.find({'user': username, 'type': 'label'})
-    print("len:",images_list.count())
     average_values_coords = []
     for _class in class_list:
         values_coords = []
         for image in images_list.clone():
             values_coords.append(image['values'][_class])
-        print(image)
         average_values_coords.append(find_average_value_coordinate(values_coords))
 
     try:
@@ -343,26 +339,27 @@ def train_detect_field(class_list):
         weight_path = model_folder + "/train/weights/best.pt"
         # shutil.copy(weight_path, app.config['UPLOAD_FOLDER'] + "/" + username)
     finally:
-        shutil.rmtree(model_folder)
-        shutil.rmtree(train_folder)
-        shutil.rmtree(val_folder)
-        shutil.rmtree(origin_folder)
-        for f in glob.glob("training_model_temp_folder/*.cache"):
-            os.remove(f)
+        # shutil.rmtree(model_folder)
+        # shutil.rmtree(train_folder)
+        # shutil.rmtree(val_folder)
+        # shutil.rmtree(origin_folder)
+        # for f in glob.glob("training_model_temp_folder/*.cache"):
+        #     os.remove(f)
         field_coords = [[] for _ in range(len(class_list))]  # FIX
         result_path = app.config['UPLOAD_FOLDER'] + "/" + username
+
         result = find_field_yolo(result_path + "/best.pt", result_path)
         for _result in result:
             for box in _result.boxes:
                 x, y, w, h = box.xywh.tolist()[0]
-                x = x / box.orig_shape[0]
-                y = y / box.orig_shape[1]
-                w = w / box.orig_shape[0]
-                h = h / box.orig_shape[1]
+                x = x / box.orig_shape[1]
+                y = y / box.orig_shape[0]
+                w = w / box.orig_shape[1]
+                h = h / box.orig_shape[0]
                 field_coords[int(box.cls.item())].append([x, y, w, h])
 
         retrieve_values_from_coordinates(app.config['UPLOAD_FOLDER'] + '/' + username, "result",
-                                         field_coords, average_values_coords, classes=['0', '1'])
+                                         field_coords, average_values_coords, classes=class_list)
         return redirect(url_for('home'))
 
 

@@ -80,14 +80,13 @@ def detect_corner(model_path, img_path, dst_path=None, is_image_path=False):
             else:
                 inp[3] = [x, y]
         [height, width] = (np.max(np.array(inp), axis=0) - np.min(np.array(inp), axis=0)).tolist()
-        out = np.float32([[width, height], [0, height], [0, 0], [width, 0]])
+        out = np.float32([[height, width], [0, width], [0, 0], [height, 0]])
         inp = np.float32(inp)
         transform_matrix = cv2.getPerspectiveTransform(inp, out)
-        warp_img = cv2.warpPerspective(img, transform_matrix, (img.shape[1], img.shape[0]))
+        warp_img = cv2.warpPerspective(img, transform_matrix, (int(height), int(width)))
         if dst_path is not None:
             print(dst_path)
             cv2.imwrite(dst_path, warp_img)
-            print("hello")
         return warp_img
     else:
         print("no box found")
