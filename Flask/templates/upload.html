@@ -7,68 +7,87 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             max-width: 600px;
-            margin: 0 auto;
+            margin: 40px auto;
             padding: 20px;
-            background-color: #f5f5f5;
+            background-color: #f0f4f8;
+            color: #333;
         }
 
         h1 {
             color: #333;
             text-align: center;
+            font-size: 28px;
             margin-bottom: 30px;
         }
 
         form {
-            background-color: white;
+            background-color: #fff;
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #ddd;
         }
 
         input[type="file"] {
             display: block;
             width: 100%;
-            margin-bottom: 15px;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 2px dashed #ccc;
+            border-radius: 6px;
+            text-align: center;
+            background-color: #fafafa;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="file"]:hover {
+            border-color: #2196F3;
         }
 
         label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            font-weight: bold;
             color: #555;
         }
 
-        select {
+        select, input[type="text"] {
             width: 100%;
-            padding: 8px;
-            margin-bottom: 15px;
+            padding: 10px;
+            margin-bottom: 20px;
             border: 1px solid #ddd;
             border-radius: 4px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
         }
 
-        input[type="text"] {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
+        select:focus, input[type="text"]:focus {
+            border-color: #2196F3;
+            outline: none;
         }
 
-        input[type="submit"] {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 15px;
+        input[type="submit"], button {
+            background-color: #2196F3;
+            color: #fff;
+            padding: 12px;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             width: 100%;
             font-size: 16px;
+            transition: background-color 0.3s ease;
         }
 
-        input[type="submit"]:hover {
-            background-color: #45a049;
+        input[type="submit"]:hover, button:hover {
+            background-color: #1976D2;
+        }
+
+        button {
+            margin-top: 10px;
+            display: inline-block;
         }
 
         p {
@@ -76,11 +95,22 @@
             margin: 10px 0;
         }
 
+        #message {
+            font-size: 14px;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e8f4f8;
+            color: #007bff;
+            border-left: 4px solid #007bff;
+            display: none;
+        }
+
         a {
             display: inline-block;
             margin-top: 20px;
             color: #2196F3;
             text-decoration: none;
+            font-weight: bold;
         }
 
         a:hover {
@@ -93,6 +123,9 @@
             max-width: 100%;
             height: auto;
             display: none; /* Hidden by default */
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         #bill-image {
@@ -105,9 +138,8 @@
 </head>
 <body>
     <h1>Upload an Image</h1>
-    <form method="POST" enctype="multipart/form-data">
+    <form id="upload-form" method="POST" enctype="multipart/form-data">
         <input type="file" name="file" id="file-input" accept="image/*" required aria-label="Upload an image">
-        <p></p>
         <label for="bill_type">Loại hóa đơn:</label>
         <select name="bill_type" id="bill_type" required aria-label="Select bill type">
             <option value="" disabled selected>Chọn loại hóa đơn</option>
@@ -115,16 +147,58 @@
                 <option value="{{ type }}">{{ type }}</option>
             {% endfor %}
         </select>
-        <img id="bill-image" src="" alt="Bill Type Image">
+        <img id="bill-image" src="" alt="Bill Image">
+        <button type="button" id="detect-btn">Detect</button>
+        <p id="message"></p>
         <p>Nếu chưa có loại bill, hãy thêm loại bill mới:</p>
-        <input type="text" id="new_bill_type" name="new_bill_type" aria-label="New bill type">
-        <p></p>
+        <input type="text" id="new_bill_type" name="new_bill_type" placeholder="Nhập loại hóa đơn mới (nếu có)">
         <input type="submit" name="submit" value="Upload">
     </form>
+
     {% if message %}
         <p>{{ message }}</p>
     {% endif %}
+
     <a href="/">Quay lại</a>
 
+    <script>
+        document.getElementById('detect-btn').addEventListener('click', function() {
+            const form = document.getElementById('upload-form');
+            const formData = new FormData(form);
+            const messageElement = document.getElementById('message');
+
+            fetch('/detect', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                messageElement.textContent = data.message;
+                messageElement.style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                messageElement.textContent = 'Có lỗi xảy ra. Vui lòng thử lại.';
+                messageElement.style.display = 'block';
+            });
+        });
+
+        const billImages = {{ bill_images | tojson |safe }};
+        console.log('Bill images:', billImages);
+        // Xử lý sự kiện khi người dùng chọn bill_type
+        document.getElementById('bill_type').addEventListener('change', function() {
+            const billType = this.value;
+            const billImage = document.getElementById('bill-image');
+
+            if (billType && billImages[billType]) {
+                // Cập nhật src của ảnh và hiển thị ảnh
+                billImage.src = billImages[billType];
+                billImage.style.display = 'block';
+            } else {
+                // Ẩn ảnh nếu không có bill_type hợp lệ
+                billImage.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>
