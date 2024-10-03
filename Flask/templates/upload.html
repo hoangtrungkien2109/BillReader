@@ -126,20 +126,5 @@
     {% endif %}
     <a href="/">Quay lại</a>
 
-    <script>
-        // Show bill image on bill type selection
-        const billImages = {{ bill_images|tojson }};
-        document.getElementById('bill_type').addEventListener('change', function() {
-            const selectedType = this.value;
-            const billImage = document.getElementById('bill-image');
-            if (billImages[selectedType]) {
-                billImage.src = billImages[selectedType]; // Cập nhật đường dẫn hình ảnh
-                billImage.style.display = 'block'; // Hiện hình ảnh
-            } else {
-                billImage.src = ''; // Xóa hình ảnh nếu không tìm thấy
-                billImage.style.display = 'none'; // Ẩn hình ảnh
-            }
-        });
-    </script>
 </body>
 </html>
