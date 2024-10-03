@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, render_template, request, session, flash, send_file, jsonify
+from flask import Flask, redirect, url_for, render_template, request, session, flash, send_file, jsonify, send_from_directory
 import os, cv2, json
 from datetime import timedelta
 from werkzeug.utils import secure_filename
@@ -102,15 +102,17 @@ def upload_file(username):
         bill_types.append(billtype)
         image = users.find_one({'user': username, 'bill_type': billtype, 'type': 'train'})
         if image:
-            bill_images[billtype] = image['path']
+            image_filename = os.path.basename(image['path'])
+            url_path = f'/static/image/{username}/{image_filename}'
+            bill_images[billtype] = url_path
     print(bill_images)
     if request.method == 'POST':
         if 'file' not in request.files:
-            return render_template('upload.html', username=username, message="Chọn file để upload", bill_types=bill_types)
+            return render_template('upload.html', username=username, message="Chọn file để upload", bill_types=bill_types, bill_images=bill_images)
 
         file = request.files['file']
         if file.filename == '':
-            return render_template('upload.html', username=username, message="Chọn file để upload", bill_types=bill_types)
+            return render_template('upload.html', username=username, message="Chọn file để upload", bill_types=bill_types, bill_images=bill_images)
 
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
@@ -118,11 +120,11 @@ def upload_file(username):
             # Check for new bill type first, then existing bill type
             bill_type = request.form.get('new_bill_type') or request.form.get('bill_type')
             if bill_type is None:
-                return render_template('upload.html', username=username, message="Chọn loại hóa đơn", bill_types=bill_types)
+                return render_template('upload.html', username=username, message="Chọn loại hóa đơn", bill_types=bill_types, bill_images=bill_images)
             image_count = users.count_documents({'user': username, 'type': 'label', 'bill_type': bill_type})
             find_image_name = users.find_one({'user': username,'image_name' : filename})
             if find_image_name:
-                return render_template('upload.html', username=username, message="Ảnh đã được tải lên", bill_types=bill_types)
+                return render_template('upload.html', username=username, message="Ảnh đã được tải lên", bill_types=bill_types, bill_images=bill_images)
             if image_count < 5:
                 label_image = {
                 'user': username,
@@ -150,12 +152,13 @@ def upload_file(username):
                     bills.insert_one({'user': username, 'bill_type': bill_type})
                     if bill_type != None:
                         bill_types.append(bill_type)
-                return render_template('upload.html', username=username, message="Upload thành công", bill_types=bill_types)
+                return render_template('upload.html', username=username, message="Upload thành công", bill_types=bill_types, bill_images=bill_images)
             except Exception as e:
                 print(f"Error uploading file: {e}")
-                return render_template('upload.html', username=username, message="Có lỗi xảy ra khi upload file", bill_types=bill_types)
+                return render_template('upload.html', username=username, message="Có lỗi xảy ra khi upload file", bill_types=bill_types, bill_images=bill_images)
 
     return render_template('upload.html', username=username, bill_types=bill_types, bill_images=bill_images)
+
 
 @app.route('/select_bill/<username>')
 def select_bill(username):
@@ -181,10 +184,15 @@ def show_image(bill_type):
             images = []
             for image_doc in images_list:
                 image_path = image_doc['path']
-                print(image_path)
+                # print(image_path)
                 image_name = image_path.split('\\').pop()
-                images.append(image_name)
-                print(images)
+                txt_path = os.path.join(app.config['UPLOAD_FOLDER'],username, image_name.replace('.jpg', '.txt'))
+                if os.path.exists(txt_path):
+                    image_name_label = image_name + " (đã label)"
+                else:
+                    image_name_label = image_name
+                images.append([image_name,image_name_label])
+            # print(images)
             return render_template('show_image.html', username=username, images=images)
 
 
