@@ -2,37 +2,27 @@ from flask import Flask, redirect, url_for, render_template, request, session, f
 import os, cv2, json
 from datetime import timedelta
 from werkzeug.utils import secure_filename
-# from Flask.database import db, users, accounts, bills
+from Flask.database import db, users, accounts, bills
 import numpy as np
 import yaml
 import shutil
-# from BillReader.utils import multiprocess_augment
-# from BillReader.bill_classifier.bill_classifier_model import train_classifier_model, classify_image
-# from BillReader.corner_detector.corner_detector import detect_corner
-# from BillReader.field_detector.value_extractor import (retrieve_values_from_coordinates, find_value_coordinate,
-#                                                        detect_value_box, get_value_coordinates_from_annotation_file,
-#                                                        find_field_yolo, train_yolo, extract_bill_from_image,
-#                                                        split_field_value_from_annotation, find_average_value_coordinate)
+import glob
+from pymongo import MongoClient
+from BillReader.utils import multiprocess_augment
+from BillReader.bill_classifier.bill_classifier_model import train_classifier_model, classify_image
+from BillReader.corner_detector.corner_detector import detect_corner
+from BillReader.field_detector.value_extractor import (retrieve_values_from_coordinates, find_value_coordinate,
+                                                       detect_value_box, get_value_coordinates_from_annotation_file,
+                                                       find_field_yolo, train_yolo, extract_bill_from_image,
+                                                       split_field_value_from_annotation, find_average_value_coordinate)
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 app._static_folder = ''
-app.config['UPLOAD_FOLDER'] = 'Flask/image'
+app.config['UPLOAD_FOLDER'] = 'image'
 app.config['TRAIN_FOLDER'] = 'training_model_temp_folder'
 app.config['MODEL_FOLDER'] = 'models'
-from pymongo import MongoClient
-
-uri = "mongodb+srv://hoangtrungkien4:R22QsguGNpBfTHlw@billreader.kc3jt.mongodb.net/?retryWrites=true&w=majority&appName=BillReader"
-client = MongoClient(uri)
-
-db = client['my_database']
-accounts = db['account']
-users = db['user']
-bills = db['bill']
-
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-# bill_types=['Bill1','Bill2','Bill3']
-
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -122,17 +112,17 @@ def upload_file(username):
             if bill_type is None:
                 return render_template('upload.html', username=username, message="Chọn loại hóa đơn", bill_types=bill_types, bill_images=bill_images)
             image_count = users.count_documents({'user': username, 'type': 'label', 'bill_type': bill_type})
-            find_image_name = users.find_one({'user': username,'image_name' : filename})
+            find_image_name = users.find_one({'user': username,'image_name': filename})
             if find_image_name:
                 return render_template('upload.html', username=username, message="Ảnh đã được tải lên", bill_types=bill_types, bill_images=bill_images)
             if image_count < 5:
                 label_image = {
-                'user': username,
-                'bill_type': bill_type,
-                'type': 'label',
-                'image_name': filename,
-                'path': os.path.join(app.config['UPLOAD_FOLDER'], username, filename),
-                'coordinate': []
+                    'user': username,
+                    'bill_type': bill_type,
+                    'type': 'label',
+                    'image_name': filename,
+                    'path': os.path.join(app.config['UPLOAD_FOLDER'], username, filename),
+                    'coordinate': []
                 }
                 users.insert_one(label_image)
             train_image = {
@@ -147,10 +137,18 @@ def upload_file(username):
             if not os.path.exists(image_folder):
                 os.makedirs(image_folder)
             try:
-                file.save(os.path.join(image_folder, filename))
+                file_bytes = np.frombuffer(file.read(), np.uint8)
+                img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+                img_detect = detect_corner(
+                    "models/corner_detector.pt",
+                    img_path=img,
+                    dst_path=os.path.join(image_folder, filename)
+                )
+                if img_detect is None:
+                    cv2.imwrite(os.path.join(image_folder, filename), img)
                 if not bills.find_one({'user': username, 'bill_type': bill_type}):
                     bills.insert_one({'user': username, 'bill_type': bill_type})
-                    if bill_type != None:
+                    if bill_type is not None:
                         bill_types.append(bill_type)
                 return render_template('upload.html', username=username, message="Upload thành công", bill_types=bill_types, bill_images=bill_images)
             except Exception as e:
@@ -176,11 +174,11 @@ def show_image(bill_type):
         return render_template("login.html", message='Bạn chưa đăng nhập')
     else:
         username = session['username']
-        image_count = users.count_documents({'user' : username,'bill_type': bill_type, 'type' : 'label'})
+        image_count = users.count_documents({'user': username,'bill_type': bill_type, 'type' : 'label'})
         if image_count == 0:
             return render_template('show_image.html', username=username, message="Bạn chưa upload ảnh")
         else:
-            images_list = users.find({'user' : username,'bill_type': bill_type, 'type' : 'label'})
+            images_list = users.find({'user': username,'bill_type': bill_type, 'type' : 'label'})
             images = []
             for image_doc in images_list:
                 image_path = image_doc['path']
@@ -222,7 +220,7 @@ def draw(image_name):
     if 'username' in session:
         username = session['username']
         image_path = f'/static/image/{username}/{image_name}'
-        bill = users.find_one({'user':username, 'image_name': image_name})
+        bill = users.find_one({'user': username, 'image_name': image_name})
         bill_type = bill['bill_type']  # Giả sử BillType nằm trong trường 'BillType' của bill
         return render_template('draw_image.html', username=username,bill_type=bill_type, image_path=image_path)
     return redirect(url_for('login'))
@@ -243,7 +241,7 @@ def save_coordinates():
     filename = os.path.join(directory, f"{image_name}.txt")
     # print(filename)
     coord_cloud = {}
-    find_bill_type = users.find_one({'user':username,"image_name": {"$regex": f"^{image_name}.*", "$options": "i"}})
+    find_bill_type = users.find_one({'user': username, "image_name": {"$regex": f"^{image_name}.*", "$options": "i"}})
     bill_type = find_bill_type['bill_type']
     # print(find_bill_type)
     with open(filename, 'w') as f:
@@ -251,7 +249,7 @@ def save_coordinates():
             if i % 2 == 0:
                 f.write(f"{coord['class']} {coord['x']} {coord['y']} {coord['width']} {coord['height']}\n")
             else:
-                coord_cloud[str(coord['class'])] = f"{coord['x'] - coordinates[i-1]['x']}_{coord['y'] - coordinates[i-1]['x']}_{coord['width']}_{coord['height']}"
+                coord_cloud[str(coord['class'])] = f"{coord['x'] - coordinates[i-1]['x']}_{coord['y'] - coordinates[i-1]['y']}_{coord['width']}_{coord['height']}"
     print(coord_cloud)
     coord_image = {'user': username, 'bill_type':bill_type, 'type': 'coordinate', 'image_name': f"{image_name}.txt", 'path': filename}
     users.insert_one(coord_image)
@@ -331,13 +329,13 @@ def train_detect_field(class_list):
     for image, ann in zip(image_list, ann_list):
         shutil.copy(image['path'], origin_folder)
         shutil.copy(ann['path'], origin_folder)
-    multiprocess_augment(
-        src_paths=origin_folder,
-        dst_paths=[train_folder, val_folder],
-        multipliers=[70, 40],
-        starts=[0, 3],
-        ends=[4, 5]
-    )
+    # multiprocess_augment(
+    #     src_paths=origin_folder,
+    #     dst_paths=[train_folder, val_folder],
+    #     multipliers=[70, 40],
+    #     starts=[0, 3],
+    #     ends=[4, 5]
+    # )
     images_list = users.find({'user': username, 'type': 'label'})
     average_values_coords = []
     for _class in class_list:
@@ -347,16 +345,19 @@ def train_detect_field(class_list):
         average_values_coords.append(find_average_value_coordinate(values_coords))
 
     try:
-        train_yolo(yaml_path=yaml_path, runs_path=model_folder, epochs=20)
+        # train_yolo(yaml_path=yaml_path, runs_path=model_folder, epochs=20)
         weight_path = model_folder + "/train/weights/best.pt"
-        shutil.copy(weight_path, app.config['UPLOAD_FOLDER'] + "/" + username)
+        # shutil.copy(weight_path, app.config['UPLOAD_FOLDER'] + "/" + username)
     finally:
-        shutil.rmtree(model_folder)
-        shutil.rmtree(train_folder)
-        shutil.rmtree(val_folder)
-        shutil.rmtree(origin_folder)
+        # shutil.rmtree(model_folder)
+        # shutil.rmtree(train_folder)
+        # shutil.rmtree(val_folder)
+        # shutil.rmtree(origin_folder)
+        # for f in glob.glob("training_model_temp_folder/*.cache"):
+        #     os.remove(f)
         field_coords = [[] for _ in range(len(class_list))]  # FIX
         result_path = app.config['UPLOAD_FOLDER'] + "/" + username
+
         result = find_field_yolo(result_path + "/best.pt", result_path)
         for _result in result:
             for box in _result.boxes:
@@ -366,9 +367,10 @@ def train_detect_field(class_list):
                 w = w / box.orig_shape[1]
                 h = h / box.orig_shape[0]
                 field_coords[int(box.cls.item())].append([x, y, w, h])
+
         retrieve_values_from_coordinates(app.config['UPLOAD_FOLDER'] + '/' + username, "result",
-                                         field_coords, average_values_coords, classes=['0', '1'])
-        return render_template("index.html", username=username)
+                                         field_coords, average_values_coords, classes=class_list)
+        return redirect(url_for('home'))
 
 
 if __name__ == "__main__":

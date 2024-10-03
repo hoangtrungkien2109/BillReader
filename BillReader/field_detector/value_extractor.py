@@ -36,10 +36,10 @@ def find_average_value_coordinate(value_boxes):
     average_value_coordinate = np.array([0., 0., 0., 0.])
     for value_box in value_boxes_temp:
         value = [eval(i) for i in value_box.split("_")]
-        average_value_coordinate[:2] = average_value_coordinate[:2] + np.array(value[:2])
-        average_value_coordinate[2:] = average_value_coordinate[2:] + np.array(value[2:])
+        average_value_coordinate = average_value_coordinate + np.array(value)
     for idx in range(len(average_value_coordinate)):
-        average_value_coordinate[idx] /= float(len(value_boxes))
+        average_value_coordinate[idx] /= 5
+    print(value_boxes_temp[0], average_value_coordinate)
     return average_value_coordinate.tolist()
 
 
@@ -68,11 +68,11 @@ def get_value_coordinates_from_annotation_file(src_path: str = "data/yolo_detect
     image_paths = glob.glob(src_path + "/*.jpg")
     field_paths = glob.glob(src_path + "/*.txt")
     value_paths = glob.glob(src_path + "/*.txt")
-    field_coordinates = np.array([[], []])
-    value_coordinates = np.array([[], []])
+    field_coordinates = np.array([[] for _ in range(num_classes)])
+    value_coordinates = np.array([[] for _ in range(num_classes)])
     for image_path, field_path, value_path in zip(image_paths, field_paths, value_paths):
-        field_coordinate = [[], []]
-        value_coordinate = [[], []]
+        field_coordinate = [[] for _ in range(num_classes)]
+        value_coordinate = [[] for _ in range(num_classes)]
         with open(field_path, "r") as field_file:
             for i in range(num_classes):
                 field_coordinate[i].append(field_file.readline().split("\n")[0])
@@ -92,6 +92,7 @@ def get_value_coordinates_from_annotation_file(src_path: str = "data/yolo_detect
 def retrieve_values_from_coordinates(src_path, dst_path, field_coordinates, average_values_coordinate, classes):
     config = r"-l vie --oem 1"
     image_paths = glob.glob(src_path + "/*.jpg")
+    print(field_coordinates)
     for idx, image_path in enumerate(image_paths):
         values = {}
         image_name = image_path.split("\\")[-1]
@@ -109,6 +110,10 @@ def retrieve_values_from_coordinates(src_path, dst_path, field_coordinates, aver
                     image[y_val-h_val//2:y_val+h_val//2, x_val-w_val//2:x_val+w_val//2],
                     config=config
                 )
+                cv2.rectangle(image, (x_val-w_val//2, y_val-h_val//2), (x_val+w_val//2, y_val+h_val//2),
+                              (255, 0, 0), 3)
+                cv2.imwrite("result/" + image_name.split(".")[0] + ".png", image)
+                print(result)
                 values[classes[i]] = result
             # json.dump(values)
             f.write(json.dumps(values))
@@ -136,9 +141,9 @@ def extract_bill_from_image(img_dir: str, dst_dir: str, extension: str = ".jpg")
         cv2.imwrite(dst_dir + "/" + image_filename, image)
 
 
-def find_field_yolo(model_path, src_path):
+def find_field_yolo(model_path, src_path, save=False):
     model = YOLO(model_path)
-    results = model.predict(source=src_path, save=True, save_txt=True)
+    results = model.predict(source=src_path, save=save, save_txt=save)
     return results
 
 
