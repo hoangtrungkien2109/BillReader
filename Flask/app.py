@@ -90,7 +90,7 @@ def upload_file(username):
             image_filename = os.path.basename(image['path'])
             url_path = f'/static/image/{username}/{image_filename}'
             bill_images[billtype] = url_path
-    # print(bill_images)
+
     if request.method == 'POST':
         if 'file' not in request.files:
             return render_template('upload.html', username=username, message="Chọn file để upload", bill_types=bill_types, bill_images=bill_images)
