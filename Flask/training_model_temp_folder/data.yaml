@@ -1,0 +1,7 @@
+names:
+  0: '0'
+  1: '1'
+nc: 2
+path: Flask/training_model_temp_folder
+train: train
+val: val

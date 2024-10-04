@@ -264,11 +264,11 @@ def show_result(bill_type):
         return render_template("login.html", message='Bạn chưa đăng nhập')
     else:
         username = session['username']
-        image_count = users.count_documents({'user' : username,'bill_type': bill_type, 'type' : 'train'})
+        image_count = users.count_documents({'user': username,'bill_type': bill_type, 'type': 'train'})
         if image_count == 0:
             return render_template('show_result.html', username=username, message="Bạn chưa upload ảnh")
         else:
-            images_list = users.find({'user' : username,'bill_type': bill_type, 'type' : 'train'})
+            images_list = users.find({'user': username, 'bill_type': bill_type, 'type': 'train'})
             images = []
             for image_doc in images_list:
                 image_path = image_doc['path']
@@ -282,10 +282,11 @@ def show_result(bill_type):
 @app.route('/train_detect_field/<bill_type>')
 def train_detect_field(bill_type):
     username = session["username"]
-
-    # Get average value and train model (if needed)
-    # Detect field
-
+    images_list = users.find({'user': username, 'type': 'label', 'bill_type': bill_type})
+    classes = images_list[0]['values']
+    print(len(classes))
+    value_detector = ValueDetector(username=username, bill_type=bill_type, class_list=classes)
+    value_detector.detect()
     return redirect(url_for('home'))
 
 
