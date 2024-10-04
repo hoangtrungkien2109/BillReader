@@ -3,37 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OCR</title>
+    <title>OCR Hóa Đơn</title>
     <style>
+        /* Modern CSS Reset */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        /* Custom Properties */
+        :root {
+            --clr-primary: #3b82f6;
+            --clr-primary-dark: #1d4ed8;
+            --clr-secondary: #64748b;
+            --clr-accent: #f59e0b;
+            --clr-background: #f8fafc;
+            --clr-white: #ffffff;
+            --clr-text: #1e293b;
+
+            --ff-primary: 'Inter', system-ui, sans-serif;
+
+            --transition: all 0.3s ease-in-out;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+        }
+
+        /* Global Styles */
         body {
-            font-family: Arial, sans-serif;
+            font-family: var(--ff-primary);
+            color: var(--clr-text);
+            line-height: 1.6;
             margin: 0;
-            padding: 0;
+            background-color: var(--clr-background);
         }
+
+        /* Typography */
+        h1, h2, p {
+            margin: 0;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            line-height: 1.2;
+            color: var(--clr-primary-dark);
+        }
+
+        h2 {
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            color: var(--clr-secondary);
+            margin-top: 2rem;
+        }
+
+        p {
+            font-size: 1.125rem;
+            color: var(--clr-secondary);
+            margin: 1rem 0;
+        }
+
+        /* Header & Navigation */
         header {
-            background-color: #333;
-            color: #fff;
-            padding: 20px;
+            background-color: var(--clr-white);
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
+
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
         nav ul {
-            list-style-type: none;
-            margin: 0;
+            list-style: none;
             padding: 0;
+            margin: 0;
             display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
         }
-        nav li {
-            margin-right: 20px;
-        }
+
         nav a {
-            color: #fff;
+            color: var(--clr-text);
             text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: var(--transition);
+            font-weight: 500;
         }
+
+        nav a:hover {
+            background-color: var(--clr-primary);
+            color: var(--clr-white);
+        }
+
+        /* Main Content */
         main {
-            padding: 20px;
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
         }
-        .buttons {
-            display: flex;
-            gap: 10px;
+
+        .container {
+            background-color: var(--clr-white);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Message Styling */
+        .message {
+            background-color: var(--clr-primary);
+            color: var(--clr-white);
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        /* Image Styling */
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            margin: 2rem 0;
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                transform: translateY(-1rem);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Button Styling */
+        .btn {
+            display: inline-block;
+            background-color: var(--clr-primary);
+            color: var(--clr-white);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            text-decoration: none;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            background-color: var(--clr-primary-dark);
+            transform: translateY(-2px);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            nav ul {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            nav li {
+                width: 100%;
+                text-align: center;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+        }
+
+        /* Additional Features */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-item {
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            background-color: var(--clr-white);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        .feature-item:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
         }
     </style>
 </head>
@@ -52,14 +216,35 @@
             </ul>
         </nav>
     </header>
+
+    <main>
         {% if message %}
-            <p>{{ message }}</p>
+            <div class="message">{{ message }}</div>
         {% endif %}
         <div class="container">
-            <h1>OCR hóa đơn</h1>
-            <p>Chuyển hóa hóa đơn giấy thành dữ liệu số chỉ với một vài cú click.</p>
+            <h1>OCR Hóa Đơn</h1>
+            <p>Chuyển đổi hóa đơn giấy thành dữ liệu số chỉ với một vài cú click. Sử dụng OCR, bạn có thể dễ dàng số hóa hóa đơn và tiết kiệm thời gian nhập liệu thủ công.</p>
+
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h2>Nhanh chóng</h2>
+                    <p>Chuyển đổi hóa đơn trong vài giây</p>
+                </div>
+                <div class="feature-item">
+                    <h2>Chính xác</h2>
+                    <p>Công nghệ OCR tiên tiến đảm bảo độ chính xác cao</p>
+                </div>
+                <div class="feature-item">
+                    <h2>Dễ sử dụng</h2>
+                    <p>Giao diện thân thiện, dễ dàng thao tác</p>
+                </div>
+            </div>
+
             <h2>Ví dụ:</h2>
-            <image src = "{{url_for('static', filename='images/IMG_3023.jpg')}}" alt = "Example"></image> 
+            <img src="{{url_for('static', filename='images/IMG_3023.jpg')}}" alt="Ví dụ hóa đơn OCR">
+
+            <a href="/upload/{{username}}" class="btn">Bắt đầu ngay</a>
         </div>
+    </main>
 </body>
 </html>

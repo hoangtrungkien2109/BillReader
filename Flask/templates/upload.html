@@ -141,7 +141,7 @@
     <form id="upload-form" method="POST" enctype="multipart/form-data">
         <input type="file" name="file" id="file-input" accept="image/*" required aria-label="Upload an image">
         <label for="bill_type">Loại hóa đơn:</label>
-        <select name="bill_type" id="bill_type" required aria-label="Select bill type">
+        <select name="bill_type" id="bill_type">
             <option value="" disabled selected>Chọn loại hóa đơn</option>
             {% for type in bill_types %}
                 <option value="{{ type }}">{{ type }}</option>

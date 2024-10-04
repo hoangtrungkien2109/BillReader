@@ -109,6 +109,7 @@ def upload_file(username):
 
             # Check for new bill type first, then existing bill type
             bill_type = request.form.get('new_bill_type') or request.form.get('bill_type')
+            print(bill_type)
             if bill_type is None:
                 return render_template('upload.html', username=username, message="Chọn loại hóa đơn", bill_types=bill_types, bill_images=bill_images)
             image_count = users.count_documents({'user': username, 'type': 'label', 'bill_type': bill_type})

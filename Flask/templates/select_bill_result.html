@@ -86,7 +86,7 @@
     </style>
 </head>
 <body>
-    <h1>Danh sách hóa đơn của bạn</h1>
+    <h1> Chọn hóa đơn để xem kết quả </h1>
     <ul>
         {% for bill in bill_list %}
         <li><a href="{{ url_for('show_result', bill_type=bill['bill_type']) }}">{{ bill['bill_type'] }}</a></li>
