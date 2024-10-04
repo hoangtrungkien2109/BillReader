@@ -112,9 +112,9 @@
     <h1>Danh sách ảnh đã upload</h1>
     <ul class="image-list">
         <table>
-            {% for image in images %}
+            {% for image, image_label in images %}
                 <div class="image-item">
-                    <p>Image</p>
+                    {{ image_label }}
                     <img src="{{ url_for('static', filename='image/' + username + '/' + image) }}" alt="{{image}}">
                     <br>
                     <div class="image-actions">
