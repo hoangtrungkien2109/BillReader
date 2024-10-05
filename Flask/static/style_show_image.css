@@ -17,7 +17,7 @@ h1 {
     text-align: center;
 }
 
-/* Image list container */
+/* image list container */
 .image-list {
     list-style-type: none;
     padding: 0;
@@ -25,7 +25,7 @@ h1 {
     max-width: 800px;
 }
 
-/* Image item container */
+/* image item container */
 .image-item {
     margin-bottom: 20px;
     text-align: center;
@@ -35,7 +35,7 @@ h1 {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Image styling */
+/* image styling */
 img {
     width: 100%;
     height: auto;

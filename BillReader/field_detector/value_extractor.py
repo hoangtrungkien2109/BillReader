@@ -89,10 +89,8 @@ def get_value_coordinates_from_annotation_file(src_path: str = "data/yolo_detect
     return average_values_coordinate
 
 
-def retrieve_values_from_coordinates(src_path, dst_path, field_coordinates, average_values_coordinate, classes):
+def retrieve_values_from_coordinates(image_paths, dst_path, field_coordinates, average_values_coordinate, classes):
     config = r"-l vie --oem 1"
-    image_paths = glob.glob(src_path + "/*.jpg")
-    print(field_coordinates)
     for idx, image_path in enumerate(image_paths):
         values = {}
         image_name = image_path.split("\\")[-1]
@@ -141,10 +139,10 @@ def extract_bill_from_image(img_dir: str, dst_dir: str, extension: str = ".jpg")
         cv2.imwrite(dst_dir + "/" + image_filename, image)
 
 
-def find_field_yolo(model_path, src_path, save=False):
+def find_field_yolo(model_path, src_img, save=False):
     model = YOLO(model_path)
-    results = model.predict(source=src_path, save=save, save_txt=save)
-    return results
+    result = model.predict(source=src_img, save=save, save_txt=save)
+    return result
 
 
 def train_yolo(yaml_path, runs_path, epochs, pretrained=None):

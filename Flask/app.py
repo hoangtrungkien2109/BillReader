@@ -186,7 +186,7 @@ def show_image(bill_type):
                     image_name_label = image_name
                 images.append([image_name,image_name_label])
             # print(images)
-            return render_template('show_image.html', username=username, images=images)
+            return render_template('show_image.html', username=username, images=images, bill_type=bill_type)
 
 
 @app.route('/about')
@@ -201,12 +201,12 @@ def save_image(filename):
     return send_file(path + filename, as_attachment=True)
 
 
-@app.route('/save_result/<filename>')
-def save_result(filename):
-    path = os.path.join('result')
+@app.route('/save_result/<result>')
+def save_result(result):
+    username, filename, bill_type = result.split('_MAGICCHARACTER_')
+    path = os.path.join(app.config['UPLOAD_FOLDER'], username, bill_type, 'result')
     txt_filename = filename.split('.')[0] + '.txt'
     file_path = os.path.join(path, txt_filename)
-    print(file_path)
     return send_file(file_path, as_attachment=True)
 
 
@@ -258,7 +258,7 @@ def save_coordinates():
 @app.route('/select_bill_result/<username>')
 def select_bill_result(username):
     if 'username' not in session:
-        return render_template('login.html', username = username, message = 'Bạn chưa đăng nhập')
+        return render_template('login.html', username=username, message='Bạn chưa đăng nhập')
     else:
         username = session['username']
         bill_list = bills.find({'user': username})
@@ -283,15 +283,15 @@ def show_result(bill_type):
                 image_name = image_path.split('\\').pop()
                 images.append(image_name)
                 print(images)
-            return render_template('show_result.html', username=username, images=images)
+            return render_template('show_result.html', username=username,
+                                   images=images, bill_type=bill_type)
 
 
 @app.route('/train_detect_field/<bill_type>')
 def train_detect_field(bill_type):
     username = session["username"]
     images_list = users.find({'user': username, 'type': 'label', 'bill_type': bill_type})
-    classes = images_list[0]['values']
-    print(len(classes))
+    classes = [key for key in images_list[0]['values']]
     value_detector = ValueDetector(username=username, bill_type=bill_type, class_list=classes)
     value_detector.detect()
     return redirect(url_for('home'))

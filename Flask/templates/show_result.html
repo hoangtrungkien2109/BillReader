@@ -101,7 +101,7 @@
                         <p>{{image}}</p>
                         <img src="{{ url_for('static', filename='image/' + username + '/' + image) }}" alt="{{ image }}"></img>
                         <br>
-                        <a href="{{ url_for('save_result', filename=image) }}">Lưu kết quả</a>
+                        <a href="{{ url_for('save_result', result=username + '_MAGICCHARACTER_' + image + '_MAGICCHARACTER_' + bill_type) }}">Lưu kết quả</a>
                     </td>
                 </tr>
             {% endfor %}

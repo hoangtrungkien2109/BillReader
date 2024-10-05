@@ -11,9 +11,9 @@ import glob
 import json
 
 
-UPLOAD_FOLDER = 'Flask/image'
-TRAIN_FOLDER = 'Flask/training_model_temp_folder'
-MODEL_FOLDER = 'Flask/models'
+UPLOAD_FOLDER = 'image'
+TRAIN_FOLDER = 'training_model_temp_folder'
+MODEL_FOLDER = 'models'
 
 
 class ValueDetector:
@@ -87,8 +87,9 @@ class ValueDetector:
         model_folder = os.path.join(UPLOAD_FOLDER, self.username, self.bill_type)
         if not os.path.exists(model_folder):
             os.makedirs(model_folder)
-
-            self.train_model()
+            model_path = os.path.join(model_folder, 'best.pt')
+            if not os.path.exists(model_path):
+                self.train_model()
 
             average_values_coords = []
             for _class in class_list:
@@ -109,13 +110,18 @@ class ValueDetector:
         field_coords = [[] for _ in range(len(self.class_list))]
         src_path = os.path.join(UPLOAD_FOLDER, self.username, self.bill_type)
         result_path = os.path.join(src_path, "result")
+        img_list = users.find({"user": self.username, "bill_type": self.bill_type, "type": 'train'})
+        img_paths = [img['path'] for img in img_list]
         if not os.path.exists(result_path):
             os.makedirs(result_path)
+        results = []
         try:
-            result = find_field_yolo(src_path + "/best.pt", src_path)
+            for img_path in img_paths:
+                if img_path.endswith(".png") or img_path.endswith(".jpeg") or img_path.endswith(".jpg"):
+                    results.append(find_field_yolo(src_path + "/best.pt", img_path)[0])
         except FileNotFoundError:
             print("File not found")
-        for _result in result:
+        for _result in results:
             for box in _result.boxes:
                 x, y, w, h = box.xywh.tolist()[0]
                 x = x / box.orig_shape[1]
@@ -123,8 +129,8 @@ class ValueDetector:
                 w = w / box.orig_shape[1]
                 h = h / box.orig_shape[0]
                 field_coords[int(box.cls.item())].append([x, y, w, h])
-
-        retrieve_values_from_coordinates(src_path, result_path,
+        print(self.class_list)
+        retrieve_values_from_coordinates(img_paths, result_path,
                                          field_coords, average_values_coords, classes=self.class_list)
 
 
