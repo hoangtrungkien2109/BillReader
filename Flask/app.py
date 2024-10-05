@@ -186,7 +186,7 @@ def show_image(bill_type):
                     image_name_label = image_name
                 images.append([image_name,image_name_label])
             # print(images)
-            return render_template('show_image.html', username=username, images=images, bill_type=bill_type)
+            return render_template('show_image.html', username=username, images=images)
 
 
 @app.route('/about')
