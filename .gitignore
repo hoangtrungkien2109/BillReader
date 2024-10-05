@@ -3,7 +3,5 @@ BillReader/data/yolo_detect_corner/datatrain
 BillReader/data/yolo_detect_corner/dataval
 BillReader/data/yolo_detect_corner/datatrain.cache
 BillReader/data/yolo_detect_corner/dataval.cache
-data.yaml
 main.py
 test.ipynb
-066e81d22721807fd930150.txt

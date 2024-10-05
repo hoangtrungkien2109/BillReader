@@ -103,11 +103,18 @@ class ValueDetector:
             average_values_coords = json.load(f)['average_coords']
         return average_values_coords
 
-    def detect(self, average_values_coords):
+    def detect(self, average_values_coords=None):
+        if average_values_coords is None:
+            average_values_coords = self.find_average_value()
         field_coords = [[] for _ in range(len(self.class_list))]
-        result_path = UPLOAD_FOLDER + "/" + self.username  #FIX this link
-
-        result = find_field_yolo(result_path + "/best.pt", result_path)
+        src_path = os.path.join(UPLOAD_FOLDER, self.username, self.bill_type)
+        result_path = os.path.join(src_path, "result")
+        if not os.path.exists(result_path):
+            os.makedirs(result_path)
+        try:
+            result = find_field_yolo(src_path + "/best.pt", src_path)
+        except FileNotFoundError:
+            print("File not found")
         for _result in result:
             for box in _result.boxes:
                 x, y, w, h = box.xywh.tolist()[0]
@@ -117,7 +124,7 @@ class ValueDetector:
                 h = h / box.orig_shape[0]
                 field_coords[int(box.cls.item())].append([x, y, w, h])
 
-        retrieve_values_from_coordinates(UPLOAD_FOLDER + '/' + self.username, "result",
+        retrieve_values_from_coordinates(src_path, result_path,
                                          field_coords, average_values_coords, classes=self.class_list)
 
 
