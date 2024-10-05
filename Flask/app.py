@@ -2,19 +2,14 @@ from flask import Flask, redirect, url_for, render_template, request, session, f
 import os, cv2, json
 from datetime import timedelta
 from werkzeug.utils import secure_filename
-from Flask.database import db, users, accounts, bills
+from Flask.src.database import users, accounts, bills
 import numpy as np
+import json
 import yaml
 import shutil
 import glob
-from pymongo import MongoClient
-from BillReader.utils import multiprocess_augment
-from BillReader.bill_classifier.bill_classifier_model import train_classifier_model, classify_image
 from BillReader.corner_detector.corner_detector import detect_corner
-from BillReader.field_detector.value_extractor import (retrieve_values_from_coordinates, find_value_coordinate,
-                                                       detect_value_box, get_value_coordinates_from_annotation_file,
-                                                       find_field_yolo, train_yolo, extract_bill_from_image,
-                                                       split_field_value_from_annotation, find_average_value_coordinate)
+from Flask.src.model_center import ValueDetector, BillClassifier
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -95,7 +90,7 @@ def upload_file(username):
             image_filename = os.path.basename(image['path'])
             url_path = f'/static/image/{username}/{image_filename}'
             bill_images[billtype] = url_path
-    print(bill_images)
+    # print(bill_images)
     if request.method == 'POST':
         if 'file' not in request.files:
             return render_template('upload.html', username=username, message="Chọn file để upload", bill_types=bill_types, bill_images=bill_images)
@@ -292,86 +287,14 @@ def show_result(bill_type):
             return render_template('show_result.html', username=username, images=images)
 
 
-@app.route('/train_detect_field/<class_list>')
-def train_detect_field(class_list):
+@app.route('/train_detect_field/<bill_type>')
+def train_detect_field(bill_type):
     username = session["username"]
-    class_list = class_list.split('_')
-    # Create temporary folders
-    origin_folder = os.path.join(app.config['TRAIN_FOLDER'], 'origin')
-    train_folder = os.path.join(app.config['TRAIN_FOLDER'], 'train')
-    val_folder = os.path.join(app.config['TRAIN_FOLDER'], 'val')
-    model_folder = os.path.join(app.config['MODEL_FOLDER'], username)
-    if not os.path.exists(origin_folder):
-        os.makedirs(origin_folder)
-    if not os.path.exists(train_folder):
-        os.makedirs(train_folder)
-    if not os.path.exists(val_folder):
-        os.makedirs(val_folder)
-    if not os.path.exists(model_folder):
-        os.makedirs(model_folder)
 
-    # Edit yaml file for training YOLO
-    yaml_path = os.path.join(app.config['TRAIN_FOLDER'], 'data.yaml')
-    with open(yaml_path) as f:
-        content = yaml.safe_load(f)
-    content['path'] = "Flask/" + app.config['TRAIN_FOLDER']
-    content['train'] = 'train'
-    content['val'] = 'val'
-    content['nc'] = len(class_list)
-    content['names'] = {}
-    for idx, class_name in enumerate(class_list):
-        content['names'][idx] = class_name
-    with open(yaml_path, "w") as f:
-        yaml.dump(content, f)
+    # Get average value and train model (if needed)
+    # Detect field
 
-    # Copy original image to temporary folder
-    image_list = users.find({'user': username, 'type': 'label'})
-    ann_list = users.find({'user': username, 'type': 'coordinate'})
-    for image, ann in zip(image_list, ann_list):
-        shutil.copy(image['path'], origin_folder)
-        shutil.copy(ann['path'], origin_folder)
-    # multiprocess_augment(
-    #     src_paths=origin_folder,
-    #     dst_paths=[train_folder, val_folder],
-    #     multipliers=[70, 40],
-    #     starts=[0, 3],
-    #     ends=[4, 5]
-    # )
-    images_list = users.find({'user': username, 'type': 'label'})
-    average_values_coords = []
-    for _class in class_list:
-        values_coords = []
-        for image in images_list.clone():
-            values_coords.append(image['values'][_class])
-        average_values_coords.append(find_average_value_coordinate(values_coords))
-
-    try:
-        # train_yolo(yaml_path=yaml_path, runs_path=model_folder, epochs=20)
-        weight_path = model_folder + "/train/weights/best.pt"
-        # shutil.copy(weight_path, app.config['UPLOAD_FOLDER'] + "/" + username)
-    finally:
-        # shutil.rmtree(model_folder)
-        # shutil.rmtree(train_folder)
-        # shutil.rmtree(val_folder)
-        # shutil.rmtree(origin_folder)
-        # for f in glob.glob("training_model_temp_folder/*.cache"):
-        #     os.remove(f)
-        field_coords = [[] for _ in range(len(class_list))]  # FIX
-        result_path = app.config['UPLOAD_FOLDER'] + "/" + username
-
-        result = find_field_yolo(result_path + "/best.pt", result_path)
-        for _result in result:
-            for box in _result.boxes:
-                x, y, w, h = box.xywh.tolist()[0]
-                x = x / box.orig_shape[1]
-                y = y / box.orig_shape[0]
-                w = w / box.orig_shape[1]
-                h = h / box.orig_shape[0]
-                field_coords[int(box.cls.item())].append([x, y, w, h])
-
-        retrieve_values_from_coordinates(app.config['UPLOAD_FOLDER'] + '/' + username, "result",
-                                         field_coords, average_values_coords, classes=class_list)
-        return redirect(url_for('home'))
+    return redirect(url_for('home'))
 
 
 if __name__ == "__main__":

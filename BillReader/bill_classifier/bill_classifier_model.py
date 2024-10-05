@@ -56,8 +56,7 @@ class BillClassifier(nn.Module):
 def train_classifier_model(root_dir, model_path, model: BillClassifier | None = None, epochs=10,
                            lr=1e-4, batch=4, load_model=False, device: str | None = None,
                            num_classes=2, hist_path=None):
-    with open('weight/history.json', 'r') as file:
-        history = json.load(file)
+    history = {}
     if model is None:
         model = BillClassifier(in_channels=3, num_classes=num_classes)
     if not device:
@@ -117,15 +116,14 @@ def train_classifier_model(root_dir, model_path, model: BillClassifier | None = 
     hist_json = json.dumps(history, indent=2)
 
     # Writing to sample.json
-    if hist_path is not None:
+    if hist_path:
         with open(hist_path, "w") as outfile:
             outfile.write(hist_json)
     return history
 
 
-def classify_image(src_path: str, model_path: str, num_classes: int, extension: str = ".jpg",
+def classify_image(img_path: str, model_path: str, num_classes: int,
                    device: str | None = None, lr=1e-4):
-    result = []
     base_model = BillClassifier(in_channels=3, num_classes=num_classes)
     opt = torch.optim.Adam(base_model.parameters(), lr=lr, betas=(0.0, 0.9))
     if device is None:
@@ -138,15 +136,16 @@ def classify_image(src_path: str, model_path: str, num_classes: int, extension: 
         opt,
         lr
     )
-    image_paths = glob.glob(src_path + '/*' + extension)
-    for image_path in image_paths:
-        image = cv2.imread(image_path)
-        image = transform(image=image)['image'].unsqueeze(0).to(device)
-        with torch.no_grad():
-            output = base_model(image)
-            _, predicted = torch.max(output, dim=1)
-        result.append(predicted.item())
-    return result
+    if type(img_path) is str:
+        image = cv2.imread(img_path)
+    else:
+        image = img_path
+    image = transform(image=image)['image'].unsqueeze(0).to(device)
+    with torch.no_grad():
+        output = base_model(image)
+        _, predicted = torch.max(output, dim=1)
+
+    return predicted.item()
 
 
 def initialize_weights(model, scale=0.1):

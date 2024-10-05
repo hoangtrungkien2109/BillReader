@@ -126,7 +126,7 @@
         </table>
         <p>{{ message }}</p>
         <div class="action-buttons">
-            <a href="{{ url_for('train_detect_field', class_list='0_1') }}" class="btn">Train model</a>
+            <a href="{{ url_for('train_detect_field', bill_type=bill_type) }}" class="btn">Train model</a>
             <a href="/select_bill/{{username}}" class="btn">Quay lại</a>
         </div>
     </ul>
