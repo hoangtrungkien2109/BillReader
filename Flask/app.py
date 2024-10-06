@@ -90,7 +90,7 @@ def upload_file(username):
             image_filename = os.path.basename(image['path'])
             url_path = f'/static/image/{username}/{image_filename}'
             bill_images[billtype] = url_path
-    # print(bill_images)
+
     if request.method == 'POST':
         if 'file' not in request.files:
             return render_template('upload.html', username=username, message="Chọn file để upload", bill_types=bill_types, bill_images=bill_images)
@@ -187,7 +187,7 @@ def show_image(bill_type):
                     image_name_label = image_name
                 images.append([image_name,image_name_label])
             # print(images)
-            return render_template('show_image.html', username=username, images=images)
+            return render_template('show_image.html', username=username, images=images, bill_type=bill_type)
 
 
 @app.route('/about')
@@ -297,6 +297,7 @@ def train_detect_field(bill_type):
     value_detector.detect()
     return redirect(url_for('home'))
 
+
 @app.route('/detect', methods=['POST'])
 def detect():
     # Kiểm tra xem có file được gửi lên không
@@ -312,15 +313,20 @@ def detect():
     if file and allowed_file(file.filename):
         # Lưu file một cách an toàn
         filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        temp_folder = os.path.join(app.config['TRAIN_FOLDER'], 'detect')
+        if not os.path.exists(temp_folder):
+            os.mkdir(temp_folder)
+        filepath = os.path.join(temp_folder, filename)
         file.save(filepath)
 
         # (Chỗ này bạn có thể thêm code để xử lý ảnh, ví dụ như phát hiện hóa đơn)
-        bill_type = 'Bill1'
+        bill_type = 0
+        shutil.rmtree(os.path.join(app.config['TRAIN_FOLDER'], 'detect'))
         # Trả về kết quả cho client
-        return jsonify({'message': f'Detected successfully for file: {filename} has billtype is {bill_type}'}), 200
+        return jsonify({'message': f'Detected bill type is {bill_type}'}), 200
     else:
         return jsonify({'message': 'Invalid file type'}), 400
+
 
 if __name__ == "__main__":
     app.run(debug=True)

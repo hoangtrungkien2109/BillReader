@@ -166,6 +166,8 @@
             const form = document.getElementById('upload-form');
             const formData = new FormData(form);
             const messageElement = document.getElementById('message');
+            const billTypeSelect = document.getElementById('bill_type');
+            const billTypes = document.getElementById('bill_types')
 
             fetch('/detect', {
                 method: 'POST',
@@ -173,6 +175,20 @@
             })
             .then(response => response.json())
             .then(data => {
+                // console.log("HELLOOOOO")
+                // Assuming the server returns the detected bill type in the 'detected_bill_type' field
+                const detectedBillType = billTypes[parseInt(data.message.replace("Detected bill type is ", ""))];
+                console.log()
+                // Find and select the detected bill type in the dropdown
+                const billTypesOptions = Array.from(billTypeSelect.options);
+                const matchingOption = billTypesOptions.find(option => option.value === detectedBillType);
+
+                if (matchingOption) {
+                    billTypeSelect.value = detectedBillType; // Set the selected value to the detected one
+                } else {
+                    console.log('No matching bill type found for:', detectedBillType);
+                }
+
                 messageElement.textContent = data.message;
                 messageElement.style.display = 'block';
             })
