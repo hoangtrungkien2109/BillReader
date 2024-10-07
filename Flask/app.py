@@ -206,12 +206,13 @@ def save_image(filename):
     return send_file(path + filename, as_attachment=True)
 
 
-@app.route('/save_result/<filename>')
-def save_result(filename):
-    path = os.path.join('result')
-    txt_filename = filename.split('.')[0] + '.txt'
+@app.route('/save_result/<result_string>')
+def save_result(result_string):
+    file_name, bill_type = result_string.split('_MAGICCHARACTER_')
+    username = session["username"]
+    path = os.path.join(app.config['UPLOAD_FOLDER'], username, bill_type, 'result')
+    txt_filename = file_name.split('.')[0] + '.txt'
     file_path = os.path.join(path, txt_filename)
-    print(file_path)
     return send_file(file_path, as_attachment=True)
 
 
@@ -288,7 +289,7 @@ def show_result(bill_type):
                 image_name = image_path.split('\\').pop()
                 images.append(image_name)
                 print(images)
-            return render_template('show_result.html', username=username, images=images)
+            return render_template('show_result.html', username=username, images=images, bill_type=bill_type)
 
 
 @app.route('/train_detect_field/<bill_type>')
@@ -303,7 +304,8 @@ def train_detect_field(bill_type):
     json_path = os.path.join(user_path, 'bills.json')
     if not os.path.exists(json_path):
         data = {'bill_types': []}
-        json.dump(data, open(json_path, 'w'))
+        with open(json_path, 'w') as f:
+            json.dump(data, f)
     with open(json_path, 'r') as f:
         data = json.load(f)
         if len(data['bill_types']) != len(bill_list) and len(bill_list) > 1:
