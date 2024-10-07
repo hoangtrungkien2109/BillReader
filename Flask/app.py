@@ -3,6 +3,8 @@ import os, cv2, json
 from datetime import timedelta
 from werkzeug.utils import secure_filename
 from Flask.src.database import users, accounts, bills
+from PIL import Image
+import pytesseract
 import numpy as np
 import json
 import yaml
@@ -327,6 +329,54 @@ def detect():
     else:
         return jsonify({'message': 'Invalid file type'}), 400
 
+@app.route('/ocr_field/<bill_type>')
+def ocr_field(bill_type):
+    username = session["username"]
+    image_path = 'image/' + username +'/IMG_3095.jpg'
+    coordinates_file = 'image/chau/IMG_3095.txt'
+
+    # Đọc tọa độ từ file .txt
+    image = Image.open(image_path)
+    img_width, img_height = image.size
+
+    # Đọc dữ liệu từ file .txt
+    with open(coordinates_file, 'r') as f:
+        lines = f.readlines()
+
+    # Duyệt qua từng dòng dữ liệu và xử lý
+    for idx, line in enumerate(lines):
+        # Mỗi dòng có định dạng: class, x, y, w, h
+        data = line.strip().split()
+        class_id = int(data[0])  # Lấy class (có thể bỏ qua nếu không cần)
+        x_rel = float(data[1])  # Tọa độ x trung tâm tương đối
+        y_rel = float(data[2])  # Tọa độ y trung tâm tương đối
+        w_rel = float(data[3])  # Chiều rộng tương đối
+        h_rel = float(data[4])  # Chiều cao tương đối
+
+        # Chuyển đổi tọa độ và kích thước từ dạng tương đối sang tọa độ thực
+        x_real = x_rel * img_width  # Tọa độ x trung tâm thực
+        y_real = y_rel * img_height  # Tọa độ y trung tâm thực
+        w_real = w_rel * img_width  # Chiều rộng thực
+        h_real = h_rel * img_height  # Chiều cao thực
+
+        # Tính tọa độ góc trên bên trái và góc dưới bên phải của hình chữ nhật
+        left = x_real - w_real / 2
+        top = y_real - h_real / 2
+        right = x_real + w_real / 2
+        bottom = y_real + h_real / 2
+
+        # Cắt ảnh theo vùng đã tính toán
+        cropped_image = image.crop((left, top, right, bottom))
+
+        # Lưu vùng ảnh đã cắt ra thành file mới (nếu cần)
+        # cropped_image.save(f'cropped_{class_id}_{idx}.jpg')  # Tạo tên file duy nhất cho từng vùng ảnh
+
+        # Thực hiện OCR trên vùng đã cắt
+        text = pytesseract.image_to_string(cropped_image, lang='eng')
+        print(text)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
+    # ocr_rectangle()
+
