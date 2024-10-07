@@ -11,13 +11,15 @@ import shutil
 from multiprocessing import Process
 
 
-def augment_image(src: str, dst: str, multiplier: int, start: int = 0, end: int | None = None):
+def augment_image(src: str, dst: str, multiplier: int, start: int = 0, end: int | None = None,
+                  classification: bool = False):
     """
     :param src: Source image path, including annotation txt file
     :param dst: Destination image path
     :param multiplier: Amount that will be multiplied with images in src_path
     :param start: Start index of image in src_path
     :param end: End index of image in src_path
+    :param classification: To determine whether to classify or to detect
     """
     image_paths = glob.glob(src + "/*.jpg")
     if not os.path.exists(dst):
@@ -42,21 +44,21 @@ def augment_image(src: str, dst: str, multiplier: int, start: int = 0, end: int 
             random_image = numpy.array(random_image)
             random_image = random_image[:, :, ::-1].copy()
             cv2.imwrite(dst + "/" + image_name + str(i) + ".jpg", random_image)
+            if not classification:
+                # Save corresponding annotations
+                src_folder = src
+                dst_folder = dst
+                filename = image_name + str(i) + ".txt"
 
-            # Save corresponding annotations
-            src_folder = src
-            dst_folder = dst
-            filename = image_name + str(i) + ".txt"
+                # Set the filename to copy and the new name
+                old_filename = image_name + '.txt'
 
-            # Set the filename to copy and the new name
-            old_filename = image_name + '.txt'
+                # Construct the full paths
+                src_path = os.path.join(src_folder, old_filename)
+                dst_path = os.path.join(dst_folder, filename)
 
-            # Construct the full paths
-            src_path = os.path.join(src_folder, old_filename)
-            dst_path = os.path.join(dst_folder, filename)
-
-            # Copy the file and rename it
-            shutil.copy2(src_path, dst_path)
+                # Copy the file and rename it
+                shutil.copy2(src_path, dst_path)
 
 
 def multiprocess_augment(src_paths, dst_paths=None, multipliers=None, max_amounts=None, classification: bool = False,
@@ -69,7 +71,8 @@ def multiprocess_augment(src_paths, dst_paths=None, multipliers=None, max_amount
                 args=(
                     src_path,
                     src_path,
-                    multipliers[idx] if multipliers else (max_amounts[idx] // len(glob.glob(src_path + "/*")))
+                    multipliers[idx] if multipliers else (max_amounts[idx] // len(glob.glob(src_path + "/*"))),
+                    0, None, classification
             ))
             processes.append(p)
     else:

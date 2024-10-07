@@ -56,7 +56,7 @@ class BillClassifier(nn.Module):
 def train_classifier_model(root_dir, model_path, model: BillClassifier | None = None, epochs=10,
                            lr=1e-4, batch=4, load_model=False, device: str | None = None,
                            num_classes=2, hist_path=None):
-    history = {}
+    history = {"loss": [], "acc": []}
     if model is None:
         model = BillClassifier(in_channels=3, num_classes=num_classes)
     if not device:
