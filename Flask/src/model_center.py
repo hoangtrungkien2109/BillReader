@@ -11,9 +11,9 @@ import glob
 import json
 
 
-UPLOAD_FOLDER = 'Flask/image'
-TRAIN_FOLDER = 'Flask/training_model_temp_folder'
-MODEL_FOLDER = 'Flask/models'
+UPLOAD_FOLDER = 'image'
+TRAIN_FOLDER = 'training_model_temp_folder'
+MODEL_FOLDER = 'models'
 
 
 class ValueDetector:
@@ -111,21 +111,26 @@ class ValueDetector:
         result_path = os.path.join(src_path, "result")
         if not os.path.exists(result_path):
             os.makedirs(result_path)
-        try:
-            result = find_field_yolo(src_path + "/best.pt", src_path)
-        except FileNotFoundError:
-            print("File not found")
-        for _result in result:
-            for box in _result.boxes:
-                x, y, w, h = box.xywh.tolist()[0]
-                x = x / box.orig_shape[1]
-                y = y / box.orig_shape[0]
-                w = w / box.orig_shape[1]
-                h = h / box.orig_shape[0]
-                field_coords[int(box.cls.item())].append([x, y, w, h])
-
-        retrieve_values_from_coordinates(src_path, result_path,
-                                         field_coords, average_values_coords, classes=self.class_list)
+        images = users.find({'user': self.username, 'bill_type': self.bill_type, 'type': 'train'})
+        for image in images:
+            image_path = image['path']
+            try:
+                result = find_field_yolo(src_path + "/best.pt", image_path)
+                for _result in result:
+                    for box in _result.boxes:
+                        x, y, w, h = box.xywh.tolist()[0]
+                        x = x / box.orig_shape[1]
+                        y = y / box.orig_shape[0]
+                        w = w / box.orig_shape[1]
+                        h = h / box.orig_shape[0]
+                        field_coords[int(box.cls.item())].append([x, y, w, h])
+                image_name = image_path.split("\\")[-1]
+                result_path_temp = result_path + "/" + image_name.split(".")[0] + ".txt"
+                with open(result_path_temp, "w") as f:
+                    retrieve_values_from_coordinates(image_path, f, field_coords,
+                                                     average_values_coords, classes=self.class_list)
+            except FileNotFoundError:
+                print("File not found")
 
 
 class BillClassifier:
@@ -135,23 +140,30 @@ class BillClassifier:
         self.model_folder = os.path.join(UPLOAD_FOLDER, self.username, "classifier.pth")
 
     def train_model(self):
+        origin_image_paths = []
+        data_root = os.path.join(TRAIN_FOLDER, 'data')
+        if not os.path.exists(data_root):
+            os.makedirs(data_root)
         data_folders = []
         for bill in self.bill_list:
-            data_folder = os.path.join(TRAIN_FOLDER, bill)
+            data_folder = os.path.join(data_root, bill)
             if not os.path.exists(data_folder):
                 os.makedirs(data_folder)
             data_folders.append(data_folder)
             image_list = users.find({'user': self.username, 'type': 'label', 'bill_type': bill})
             for image in image_list:
                 shutil.copy(image['path'], data_folder)
+                origin_image_paths.append(os.path.join(data_folder, os.path.basename(image['path'])))
 
         try:
-            multiprocess_augment(data_folders, multipliers=[60 for _ in range(len(data_folders))], classification=True)
-            train_classifier_model(root_dir=TRAIN_FOLDER, model_path=self.model_folder,
-                                   epochs=30, num_classes=len(self.bill_list))
+            multiprocess_augment(data_folders, multipliers=[40 for _ in range(len(data_folders))], classification=True)
+            for origin_image_path in origin_image_paths:
+                os.remove(origin_image_path)
+            train_classifier_model(root_dir=data_root, model_path=self.model_folder,
+                                   epochs=5, num_classes=len(self.bill_list),
+                                   hist_path=os.path.join(UPLOAD_FOLDER, self.username, 'hist.json'))
         finally:
-            for folder in data_folders:
-                shutil.rmtree(folder)
+            shutil.rmtree(data_root)
 
     def classify(self, img_path):
-        classify_image(img_path=img_path, model_path=self.model_folder, num_classes=len(self.bill_list))
+        return classify_image(img_path=img_path, model_path=self.model_folder, num_classes=len(self.bill_list))
