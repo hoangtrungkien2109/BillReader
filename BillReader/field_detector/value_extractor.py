@@ -89,46 +89,26 @@ def get_value_coordinates_from_annotation_file(src_path: str = "data/yolo_detect
     return average_values_coordinate
 
 
-def retrieve_values_from_coordinates(src_path, dst_path, field_coordinates, average_values_coordinate, classes):
+def retrieve_values_from_coordinates(img_path, file_json, field_coordinates, average_values_coordinate, classes):
     config = r"-l vie --oem 1"
-    image_paths = glob.glob(src_path + "/*.jpg")
-    print(field_coordinates)
-    for idx, image_path in enumerate(image_paths):
-        values = {}
-        image_name = image_path.split("\\")[-1]
-        image = cv2.imread(image_path)
-        result_path = dst_path + "/" + image_name.split(".")[0] + ".txt"
-        with open(result_path, "w") as f:
-            for i in range(len(classes)):
-                field_box = field_coordinates[i][idx]
-                value_box = detect_value_box(field_box, average_values_coordinate[i], multiplier=1.2)
-                field_box, value_box = denormalize(image, field_box, value_box)
-                x_val, y_val, w_val, h_val = value_box
+    values = {}
+    image = cv2.imread(img_path)
+    for i in range(len(classes)):
+        field_box = field_coordinates[i][0]
+        value_box = detect_value_box(field_box, average_values_coordinate[i], multiplier=1.2)
+        field_box, value_box = denormalize(image, field_box, value_box)
+        x_val, y_val, w_val, h_val = value_box
 
-                # Need to process the result
-                result = pt.image_to_string(
-                    image[y_val-h_val//2:y_val+h_val//2, x_val-w_val//2:x_val+w_val//2],
-                    config=config
-                )
-                cv2.rectangle(image, (x_val-w_val//2, y_val-h_val//2), (x_val+w_val//2, y_val+h_val//2),
-                              (255, 0, 0), 3)
-                cv2.imwrite("result/" + image_name.split(".")[0] + ".png", image)
-                print(result)
-                values[classes[i]] = result
-            # json.dump(values)
-            f.write(json.dumps(values))
-        #     image = cv2.rectangle(image, pt1=(int(field_box[0]-field_box[2]//2), int(field_box[1]-field_box[3]//2)),
-        #                           pt2=(int(field_box[0]+field_box[2]//2), int(field_box[1]+field_box[3]//2)),
-        #                           color=(255,0,0), thickness=3)
-        #
-        #     image = cv2.rectangle(image, pt1=(int(value_box[0]-value_box[2]//2), int(value_box[1]-value_box[3]//2)),
-        #                           pt2=(int(value_box[0]+value_box[2]//2), int(value_box[1]+value_box[3]//2)),
-        #                           color=(0,255,0), thickness=3)
-        #
-        #     image = cv2.line(image, pt1=(int(field_box[0]), int(field_box[1])),
-        #                      pt2=(int(value_box[0]), int(value_box[1])),
-        #                      color=(0,0,255), thickness=2)
-        # cv2.imwrite("data/yolo_detect_multifield_box/detected_values/" + image_name, image)
+        # Need to process the result
+        result = pt.image_to_string(
+            image[y_val-h_val//2:y_val+h_val//2, x_val-w_val//2:x_val+w_val//2],
+            config=config
+        )
+        # cv2.rectangle(image, (x_val-w_val//2, y_val-h_val//2), (x_val+w_val//2, y_val+h_val//2),
+        #               (255, 0, 0), 3)
+        # cv2.imwrite("result/" + image_name.split(".")[0] + ".png", image)
+        values[list(classes.keys())[i]] = result
+    file_json.write(json.dumps(values))
 
 
 def extract_bill_from_image(img_dir: str, dst_dir: str, extension: str = ".jpg") -> None:

@@ -109,8 +109,6 @@ def upload_file(username):
                 return render_template('upload.html', username=username, message="Chọn loại hóa đơn", bill_types=bill_types, bill_images=bill_images)
             image_count = users.count_documents({'user': username, 'type': 'label', 'bill_type': bill_type})
             find_image_name = users.find_one({'user': username,'image_name': filename})
-            if find_image_name:
-                return render_template('upload.html', username=username, message="Ảnh đã được tải lên", bill_types=bill_types, bill_images=bill_images)
             if image_count < 5:
                 label_image = {
                     'user': username,
@@ -132,24 +130,30 @@ def upload_file(username):
             image_folder = os.path.join(app.config['UPLOAD_FOLDER'], username)
             if not os.path.exists(image_folder):
                 os.makedirs(image_folder)
-            try:
-                file_bytes = np.frombuffer(file.read(), np.uint8)
-                img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-                img_detect = detect_corner(
-                    "models/corner_detector.pt",
-                    img_path=img,
-                    dst_path=os.path.join(image_folder, filename)
-                )
-                if img_detect is None:
-                    cv2.imwrite(os.path.join(image_folder, filename), img)
-                if not bills.find_one({'user': username, 'bill_type': bill_type}):
-                    bills.insert_one({'user': username, 'bill_type': bill_type})
-                    if bill_type is not None:
-                        bill_types.append(bill_type)
-                return render_template('upload.html', username=username, message="Upload thành công", bill_types=bill_types, bill_images=bill_images)
-            except Exception as e:
-                print(f"Error uploading file: {e}")
-                return render_template('upload.html', username=username, message="Có lỗi xảy ra khi upload file", bill_types=bill_types, bill_images=bill_images)
+            # try:
+            file_bytes = np.frombuffer(file.read(), np.uint8)
+            img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+            temp_img = img
+            img_detect = detect_corner(
+                "models/corner_detector.pt",
+                img_path=img,
+                dst_path=os.path.join(image_folder, filename)
+            )
+            print(img_detect)
+            if img_detect is None:
+                cv2.imwrite(os.path.join(image_folder, filename), temp_img)
+            if find_image_name:
+                return render_template('upload.html', username=username, message="Ảnh đã được tải lên",
+                                           bill_types=bill_types, bill_images=bill_images)
+            if not bills.find_one({'user': username, 'bill_type': bill_type}):
+                bills.insert_one({'user': username, 'bill_type': bill_type})
+                if bill_type is not None:
+                    bill_types.append(bill_type)
+            return render_template('upload.html', username=username, message="Upload thành công",
+                                   bill_types=bill_types, bill_images=bill_images)
+            # except Exception as e:
+            #     print(f"Error uploading file: {e}")
+            #     return render_template('upload.html', username=username, message="Có lỗi xảy ra khi upload file", bill_types=bill_types, bill_images=bill_images)
 
     return render_template('upload.html', username=username, bill_types=bill_types, bill_images=bill_images)
 
@@ -291,15 +295,30 @@ def show_result(bill_type):
 def train_detect_field(bill_type):
     username = session["username"]
     images_list = users.find({'user': username, 'type': 'label', 'bill_type': bill_type})
+    bill_list = [bill['bill_type'] for bill in list(bills.find({'user': username}))]
     classes = images_list[0]['values']
-    print(len(classes))
     value_detector = ValueDetector(username=username, bill_type=bill_type, class_list=classes)
     value_detector.detect()
+    user_path = os.path.join(app.config['UPLOAD_FOLDER'], username)
+    json_path = os.path.join(user_path, 'bills.json')
+    if not os.path.exists(json_path):
+        data = {'bill_types': []}
+        json.dump(data, open(json_path, 'w'))
+    with open(json_path, 'r') as f:
+        data = json.load(f)
+        if len(data['bill_types']) != len(bill_list) and len(bill_list) > 1:
+            print(bill_list)
+            bill_classifier = BillClassifier(username=username, bill_list=bill_list)
+            bill_classifier.train_model()
+        data['bill_types'] = bill_list
+    with open(json_path, 'w') as f:
+        json.dump(data, f)
     return redirect(url_for('home'))
 
 
 @app.route('/detect', methods=['POST'])
 def detect():
+    username = session['username']
     # Kiểm tra xem có file được gửi lên không
     if 'file' not in request.files:
         return jsonify({'message': 'No file part in the request'}), 400
@@ -316,11 +335,17 @@ def detect():
         temp_folder = os.path.join(app.config['TRAIN_FOLDER'], 'detect')
         if not os.path.exists(temp_folder):
             os.mkdir(temp_folder)
-        filepath = os.path.join(temp_folder, filename)
-        file.save(filepath)
+        file_path = os.path.join(temp_folder, filename)
+        file.save(file_path)
 
+        json_path = os.path.join(app.config['UPLOAD_FOLDER'], username, 'bills.json')
+        with open(json_path, 'r') as f:
+            data = json.load(f)
+        bill_list = data['bill_types']
         # (Chỗ này bạn có thể thêm code để xử lý ảnh, ví dụ như phát hiện hóa đơn)
-        bill_type = 0
+        bill_classifier = BillClassifier(username=username, bill_list=bill_list)
+        bill_type = bill_classifier.classify(file_path)
+        print(bill_type)
         shutil.rmtree(os.path.join(app.config['TRAIN_FOLDER'], 'detect'))
         # Trả về kết quả cho client
         return jsonify({'message': f'Detected bill type is {bill_type}'}), 200
