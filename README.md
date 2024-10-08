@@ -19,6 +19,9 @@ This project focuses on detecting and extracting key fields from bills using a c
   - `pytesseract` (for OCR)
   - `opencv-python` (for image processing)
 
+## 👓 Flow Visualization
+![Data Flow](Flask/images/flow.png)
+
 ## 📁 Project Structure
 
 ```bash
