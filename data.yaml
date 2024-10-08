@@ -1,8 +1,0 @@
-names:
-  1: field1
-  2: field2
-nc: 2
-path: Flask/training_model_temp_folder
-test: datatest
-train: train
-val: val
