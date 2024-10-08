@@ -3,132 +3,327 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Danh sách ảnh</title>
+    <title>Hiển thị ảnh và kết quả OCR</title>
     <style>
-        /* General body styling */
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f4f4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f9f9f9;
             margin: 0;
-            padding: 0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
         }
 
-        /* Page title */
         h1 {
-            color: #333;
+            color: #2c3e50;
             margin-bottom: 20px;
             text-align: center;
+            font-size: 2em;
+            font-weight: 300;
         }
 
-        /* Image list container */
+        .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 1200px;
+        }
+
         .image-list {
             list-style-type: none;
             padding: 0;
-            width: 100%;
-            max-width: 800px;
+            width: 45%;
         }
 
-        /* Image item container */
         .image-item {
+            position: relative;
             margin-bottom: 20px;
             text-align: center;
-            background-color: #fff;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
         }
 
-        /* Image styling */
+        .image-item:hover {
+            transform: scale(1.05);
+        }
+
         img {
             width: 100%;
             height: auto;
-            max-width: 800px;
-            border-radius: 8px;
+            max-width: 500px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             margin-bottom: 10px;
+            cursor: pointer;
         }
 
-        /* Action links (Lưu ảnh, Draw) */
+        /* Center the action links below the image */
         .image-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
             margin-top: 10px;
         }
 
         .action-link {
-            display: inline-block;
-            margin: 5px;
-            padding: 10px 20px;
-            background-color: #007bff;
             color: white;
+            background-color: #16a085;
+            padding: 10px 20px;
+            text-align: center;
             text-decoration: none;
-            border-radius: 5px;
-            transition: background-color 0.3s ease;
+            border-radius: 4px;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
         }
 
         .action-link:hover {
-            background-color: #0056b3;
+            background-color: #1abc9c;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
-        /* Action buttons (Train model, Quay lại) */
-        .action-buttons {
-            margin-top: 20px;
-            text-align: center;
+        .ocr-table {
+            width: 50%;
+            padding-left: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            border-radius: 10px;
         }
 
-        .btn {
-            display: inline-block;
-            margin: 10px;
-            padding: 12px 24px;
-            background-color: #28a745;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 16px;
+            text-align: left;
+            color: #2c3e50;
+        }
+
+        table th, table td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
             transition: background-color 0.3s ease;
         }
 
+        table th {
+            background-color: #ecf0f1;
+        }
+
+        table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        table td[contenteditable="true"] {
+            background-color: #eafaf1;
+            border: 1px solid #2ecc71;
+        }
+
+        table td:hover {
+            background-color: #f0f8ff;
+        }
+
+        .action-buttons {
+            margin-top: 15px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            cursor: pointer;
+            border-radius: 4px;
+            border: none;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
         .btn:hover {
-            background-color: #218838;
+            background-color: #2980b9;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-lock {
+            background-color: #e74c3c;
+        }
+
+        .btn-lock:hover {
+            background-color: #c0392b;
+        }
+
+        .btn-edit {
+            background-color: #27ae60;
+        }
+
+        .btn-edit:hover {
+            background-color: #229954;
+        }
+
+        .btn-save {
+            background-color: #f39c12;
+        }
+
+        .btn-save:hover {
+            background-color: #e67e22;
         }
 
         /* Responsive design */
-        @media (max-width: 600px) {
+        @media (max-width: 800px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .image-list, .ocr-table {
+                width: 100%;
+            }
+
             img {
-                width: 100%;
+                max-width: 100%;
             }
 
-            .btn {
-                width: 100%;
-            }
-
-            .action-link {
-                width: 100%;
+            .image-actions {
+                flex-direction: column;
+                gap: 10px;
             }
         }
     </style>
 </head>
 <body>
-    <h1>Danh sách ảnh đã upload</h1>
-    <ul class="image-list">
-        <table>
+
+    <h1>Hiển thị ảnh và kết quả OCR</h1>
+
+    <div class="container">
+        <!-- Danh sách ảnh -->
+        <ul class="image-list">
             {% for image, image_label in images %}
-                <div class="image-item">
-                    {{ image_label }}
-                    <img src="{{ url_for('static', filename='image/' + username + '/' + image) }}" alt="{{image}}">
-                    <br>
-                    <div class="image-actions">
-                        <a href="{{ url_for('save_image', filename= image) }}" class="action-link">Lưu ảnh</a>
-                        <a href="{{ url_for('draw', image_name=image) }}" class="action-link">Draw</a>
-                    </div>
+            <li class="image-item">
+                <strong>{{ image_label }}</strong>
+                <img src="{{ url_for('static', filename='image/' + username + '/' + image) }}" alt="{{ image }}"
+                     data-image="{{ image }}"
+                     onmouseover="loadOcrTable('{{ url_for('ocr_field', bill_type=bill_type, image=image) }}')">
+                <!-- Vùng chứa action-link nằm dưới tấm ảnh -->
+                <div class="image-actions">
+                    <a href="{{ url_for('save_image', filename= image) }}" class="action-link">Lưu ảnh</a>
+                    <a href="{{ url_for('draw', image_name=image) }}" class="action-link">Draw</a>
                 </div>
+            </li>
             {% endfor %}
-        </table>
-        <p>{{ message }}</p>
-        <div class="action-buttons">
-            <a href="{{ url_for('train_detect_field', bill_type=bill_type) }}" class="btn">Train model</a>
-            <a href="/select_bill/{{username}}" class="btn">Quay lại</a>
+            <p>{{ message }}</p>
+            <div class="action-buttons">
+                <a href="{{ url_for('train_detect_field', bill_type=bill_type) }}" class="btn">Train model</a>
+                <a href="/select_bill/{{username}}" class="btn">Quay lại</a>
+            </div>
+        </ul>
+
+        <!-- Vùng hiển thị bảng OCR -->
+        <div class="ocr-table">
+            <div id="ocrResult">
+                <p>Di chuột qua ảnh để xem kết quả OCR.</p>
+            </div>
+            <!-- Thêm các nút Sửa, Khóa, và Save -->
+            <div class="action-buttons">
+                <button class="btn btn-edit" onclick="enableEditing()">Sửa</button>
+                <button class="btn btn-lock" onclick="lockEditing()">Khóa</button>
+                <button class="btn btn-save" onclick="saveOcr()">Lưu</button>
+            </div>
         </div>
-    </ul>
+    </div>
+
+    <script>
+        // Biến theo dõi trạng thái khóa
+        let isLocked = false;
+        const bill_type = "{{ bill_type }}";
+
+        function loadOcrTable(url) {
+            // Kiểm tra nếu bảng đang bị khóa thì không cho tải OCR
+            if (isLocked) {
+                console.log("Bảng đã bị khóa, không thể hiển thị OCR.");
+                return;
+            }
+
+            // Gửi yêu cầu AJAX để tải bảng OCR cho ảnh được chọn
+            fetch(url)
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('ocrResult').innerHTML = data;
+                })
+                .catch(error => console.error('Lỗi khi tải bảng OCR:', error));
+        }
+
+        // Chức năng Sửa - cho phép chỉnh sửa bảng
+        function enableEditing() {
+            const table = document.querySelector("#ocrResult table");
+            if (table) {
+                const cells = table.querySelectorAll("td");
+                cells.forEach(cell => {
+                    cell.setAttribute("contenteditable", "true");
+                    cell.style.backgroundColor = "#eafaf1";  // Đổi màu nền khi đang sửa
+                });
+            }
+            // Cho phép tải OCR khi di chuột qua ảnh
+            isLocked = false;
+        }
+
+        // Chức năng Khóa - khóa lại bảng không cho chỉnh sửa
+        function lockEditing() {
+            const table = document.querySelector("#ocrResult table");
+            if (table) {
+                const cells = table.querySelectorAll("td");
+                cells.forEach(cell => {
+                    cell.setAttribute("contenteditable", "false");
+                    cell.style.backgroundColor = "";  // Trở về màu nền ban đầu
+                });
+            }
+            // Khóa luôn chức năng hiển thị OCR khi di chuột qua ảnh
+            isLocked = true;
+        }
+
+        // Chức năng Lưu - lưu bảng OCR sau khi chỉnh sửa
+        function saveOcr() {
+            const table = document.querySelector("#ocrResult table");
+            if (!table) {
+                console.error("Không tìm thấy bảng OCR để lưu.");
+                return;
+            }
+
+            // Tạo một mảng để lưu dữ liệu bảng OCR
+            const ocrData = [];
+            const rows = table.querySelectorAll("tr");
+
+            // Duyệt qua các hàng và cột trong bảng để lấy dữ liệu
+            rows.forEach(row => {
+                const rowData = [];
+                const cells = row.querySelectorAll("td");
+                cells.forEach(cell => {
+                    rowData.push(cell.innerText.trim()); // Lấy nội dung từng ô
+                });
+                ocrData.push(rowData);
+            });
+
+            // Gửi dữ liệu OCR về server qua AJAX
+            fetch('/save_ocr_data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ ocrData: ocrData ,bill_type : bill_type })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Dữ liệu đã được lưu thành công:", data);
+                alert("Dữ liệu OCR đã được lưu thành công!");
+            })
+            .catch(error => {
+                console.error("Lỗi khi lưu dữ liệu OCR:", error);
+                alert("Có lỗi xảy ra khi lưu dữ liệu OCR.");
+            });
+        }
+    </script>
 </body>
 </html>

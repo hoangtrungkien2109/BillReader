@@ -354,13 +354,19 @@ def detect():
     else:
         return jsonify({'message': 'Invalid file type'}), 400
 
-@app.route('/ocr_field/<bill_type>')
-def ocr_field(bill_type):
-    username = session["username"]
-    image_path = 'image/' + username +'/IMG_3095.jpg'
-    coordinates_file = 'image/chau/IMG_3095.txt'
 
-    # Đọc tọa độ từ file .txt
+@app.route('/ocr_field/<bill_type>/<image>')
+def ocr_field(bill_type, image):
+    username = session["username"]
+    # Xác định đường dẫn ảnh và file .txt dựa trên ảnh được truyền vào
+    image_dir = f'image/{username}/'
+    txt_dir = f'image/{username}/'
+
+    image_path = os.path.join(image_dir, image)
+    txt_filename = image.replace('.jpg', '.txt')
+    coordinates_file = os.path.join(txt_dir, txt_filename)
+
+    # Đọc ảnh và kích thước
     image = Image.open(image_path)
     img_width, img_height = image.size
 
@@ -368,37 +374,70 @@ def ocr_field(bill_type):
     with open(coordinates_file, 'r') as f:
         lines = f.readlines()
 
+    # Danh sách chứa kết quả OCR từ từng hình chữ nhật
+    ocr_results = []
+
     # Duyệt qua từng dòng dữ liệu và xử lý
     for idx, line in enumerate(lines):
-        # Mỗi dòng có định dạng: class, x, y, w, h
         data = line.strip().split()
-        class_id = int(data[0])  # Lấy class (có thể bỏ qua nếu không cần)
-        x_rel = float(data[1])  # Tọa độ x trung tâm tương đối
-        y_rel = float(data[2])  # Tọa độ y trung tâm tương đối
-        w_rel = float(data[3])  # Chiều rộng tương đối
-        h_rel = float(data[4])  # Chiều cao tương đối
+        class_id = int(data[0])
+        x_rel = float(data[1])
+        y_rel = float(data[2])
+        w_rel = float(data[3])
+        h_rel = float(data[4])
 
-        # Chuyển đổi tọa độ và kích thước từ dạng tương đối sang tọa độ thực
-        x_real = x_rel * img_width  # Tọa độ x trung tâm thực
-        y_real = y_rel * img_height  # Tọa độ y trung tâm thực
-        w_real = w_rel * img_width  # Chiều rộng thực
-        h_real = h_rel * img_height  # Chiều cao thực
+        x_real = x_rel * img_width
+        y_real = y_rel * img_height
+        w_real = w_rel * img_width
+        h_real = h_rel * img_height
 
-        # Tính tọa độ góc trên bên trái và góc dưới bên phải của hình chữ nhật
         left = x_real - w_real / 2
         top = y_real - h_real / 2
         right = x_real + w_real / 2
         bottom = y_real + h_real / 2
 
-        # Cắt ảnh theo vùng đã tính toán
         cropped_image = image.crop((left, top, right, bottom))
-
-        # Lưu vùng ảnh đã cắt ra thành file mới (nếu cần)
-        # cropped_image.save(f'cropped_{class_id}_{idx}.jpg')  # Tạo tên file duy nhất cho từng vùng ảnh
-
-        # Thực hiện OCR trên vùng đã cắt
         text = pytesseract.image_to_string(cropped_image, lang='eng')
-        print(text)
+
+        ocr_results.append({
+            'index': idx,
+            'class_id': class_id,
+            'text': text
+        })
+
+    # Trả về bảng HTML hiển thị kết quả OCR
+    return render_template('ocr_table.html', ocr_results=ocr_results)
+
+
+@app.route('/save_ocr_data', methods=['POST'])
+def save_ocr_data():
+    username = session['username']
+    try:
+        # Nhận dữ liệu từ yêu cầu POST
+        data = request.get_json()
+
+        # Kiểm tra xem dữ liệu có hợp lệ hay không
+        if 'ocrData' not in data:
+            return jsonify({'status': 'error', 'message': 'Dữ liệu không hợp lệ!'}), 400
+
+        ocr_data = data['ocrData']
+        bill_type = data['bill_type']
+
+        save_dir = os.path.join(app.config['UPLOAD_FOLDER'], username,bill_type)
+
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        save_path = os.path.join(save_dir, 'ocr_field.json')
+        # Lưu dữ liệu vào file JSON (có thể thay đổi cách lưu vào database)
+        with open(save_path, 'w', encoding='utf-8') as f:
+            json.dump(ocr_data, f, ensure_ascii=False, indent=4)
+
+        # Trả về phản hồi thành công
+        return jsonify({'status': 'success', 'message': 'Dữ liệu OCR đã được lưu thành công!'})
+
+    except Exception as e:
+        # Xử lý lỗi nếu có
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
 if __name__ == "__main__":

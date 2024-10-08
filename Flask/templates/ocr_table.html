@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết quả OCR</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 18px;
+            text-align: left;
+        }
+        table th, table td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+        }
+        table th {
+            background-color: #f4f4f4;
+        }
+        table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h2>Kết quả OCR</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Class</th>
+                <th>Văn bản OCR</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in ocr_results %}
+            <tr>
+                <td>{{ result.index }}</td>
+                <td>{{ result.class_id }}</td>
+                <td>{{ result.text }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
