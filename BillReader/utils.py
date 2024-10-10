@@ -70,7 +70,7 @@ def multiprocess_augment(src_paths, dst_paths=None, multipliers=None, max_amount
                 target=augment_image,
                 args=(
                     src_path,
-                    src_path,
+                    dst_paths[idx],
                     multipliers[idx] if multipliers else (max_amounts[idx] // len(glob.glob(src_path + "/*"))),
                     0, None, classification
             ))

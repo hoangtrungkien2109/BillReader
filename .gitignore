@@ -5,6 +5,6 @@ BillReader/data/yolo_detect_corner/datatrain.cache
 BillReader/data/yolo_detect_corner/dataval.cache
 main.py
 test.ipynb
-__pycache__/
-**/__pycache__/
 __pycache__
+data
+!**/__pycache__/

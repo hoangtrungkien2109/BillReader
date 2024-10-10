@@ -225,7 +225,7 @@
             {% endfor %}
             <p>{{ message }}</p>
             <div class="action-buttons">
-                <a href="{{ url_for('train_detect_field', bill_type=bill_type) }}" class="btn">Train model</a>
+<!--                <a href="{{ url_for('train_detect_field', bill_type=bill_type) }}" class="btn">Train model</a>-->
                 <a href="/select_bill/{{username}}" class="btn">Quay lại</a>
             </div>
         </ul>
@@ -236,10 +236,12 @@
                 <p>Di chuột qua ảnh để xem kết quả OCR.</p>
             </div>
             <!-- Thêm các nút Sửa, Khóa, và Save -->
+            <p>{{message}}</p>
             <div class="action-buttons">
                 <button class="btn btn-edit" onclick="enableEditing()">Sửa</button>
                 <button class="btn btn-lock" onclick="lockEditing()">Khóa</button>
                 <button class="btn btn-save" onclick="saveOcr()">Lưu</button>
+                <a href="{{ url_for('train_detect_field', bill_type=bill_type) }}" class="btn">Train model</a>
             </div>
         </div>
     </div>

@@ -4,6 +4,7 @@ from BillReader.field_detector.value_extractor import (retrieve_values_from_coor
 from BillReader.bill_classifier.bill_classifier_model import train_classifier_model, classify_image
 from BillReader.utils import multiprocess_augment
 from Flask.src.database import users, bills, accounts
+from loguru import logger
 import os
 import yaml
 import shutil
@@ -73,7 +74,7 @@ class ValueDetector:
             weight_path = model_folder + "/train/weights/best.pt"
             shutil.copy(weight_path, new_model_folder)
         finally:
-            shutil.rmtree(model_folder)
+            # shutil.rmtree(model_folder)
             shutil.rmtree(train_folder)
             shutil.rmtree(val_folder)
             shutil.rmtree(origin_folder)
@@ -81,15 +82,20 @@ class ValueDetector:
                 os.remove(f)
 
     def find_average_value(self):
-        images_list = users.find({'user': self.username, 'type': 'label'})
+        images_list = users.find({'user': self.username, 'type': 'label', 'bill_type': self.bill_type})
+
         class_list = [str(i) for i in range(len(images_list.clone()[0]['values']))]
+        logger.info(class_list)
         # Create temporary folders
         model_folder = os.path.join(UPLOAD_FOLDER, self.username, self.bill_type)
-        if not os.path.exists(model_folder):
-            os.makedirs(model_folder)
+        model_path = os.path.join(model_folder, "best.pt")
+        json_path = os.path.join(model_folder, "average_values_coords.json")
+        if not os.path.exists(model_path):
+            if not os.path.exists(model_folder):
+                os.makedirs(model_folder)
 
             self.train_model()
-
+        if not os.path.exists(json_path):
             average_values_coords = []
             for _class in class_list:
                 values_coords = []
@@ -113,6 +119,7 @@ class ValueDetector:
             os.makedirs(result_path)
         images = users.find({'user': self.username, 'bill_type': self.bill_type, 'type': 'train'})
         for image in images:
+            field_coords = [[] for _ in range(len(self.class_list))]
             image_path = image['path']
             try:
                 result = find_field_yolo(src_path + "/best.pt", image_path)
@@ -140,30 +147,36 @@ class BillClassifier:
         self.model_folder = os.path.join(UPLOAD_FOLDER, self.username, "classifier.pth")
 
     def train_model(self):
-        origin_image_paths = []
         data_root = os.path.join(TRAIN_FOLDER, 'data')
+        origin_root = os.path.join(TRAIN_FOLDER, 'origin')
         if not os.path.exists(data_root):
             os.makedirs(data_root)
+        if not os.path.exists(origin_root):
+            os.makedirs(origin_root)
         data_folders = []
+        origin_folders = []
         for bill in self.bill_list:
             data_folder = os.path.join(data_root, bill)
+            origin_folder = os.path.join(origin_root, bill)
             if not os.path.exists(data_folder):
                 os.makedirs(data_folder)
+            if not os.path.exists(origin_folder):
+                os.makedirs(origin_folder)
             data_folders.append(data_folder)
+            origin_folders.append(origin_folder)
             image_list = users.find({'user': self.username, 'type': 'label', 'bill_type': bill})
             for image in image_list:
-                shutil.copy(image['path'], data_folder)
-                origin_image_paths.append(os.path.join(data_folder, os.path.basename(image['path'])))
+                shutil.copy(image['path'], origin_folder)
 
         try:
-            multiprocess_augment(data_folders, multipliers=[40 for _ in range(len(data_folders))], classification=True)
-            for origin_image_path in origin_image_paths:
-                os.remove(origin_image_path)
+            multiprocess_augment(src_paths=origin_folders, dst_paths=data_folders,
+                                 multipliers=[40 for _ in range(len(data_folders))], classification=True)
             train_classifier_model(root_dir=data_root, model_path=self.model_folder,
                                    epochs=5, num_classes=len(self.bill_list),
                                    hist_path=os.path.join(UPLOAD_FOLDER, self.username, 'hist.json'))
         finally:
             shutil.rmtree(data_root)
+            shutil.rmtree(origin_root)
 
     def classify(self, img_path):
         return classify_image(img_path=img_path, model_path=self.model_folder, num_classes=len(self.bill_list))
