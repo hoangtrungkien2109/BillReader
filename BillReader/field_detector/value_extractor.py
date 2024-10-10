@@ -4,6 +4,7 @@ import cv2
 import pytesseract as pt
 import json
 import os
+from loguru import logger
 from ultralytics import YOLO
 from BillReader.field_detector.preprocess import preprocess
 
@@ -93,7 +94,12 @@ def retrieve_values_from_coordinates(img_path, file_json, field_coordinates, ave
     config = r"-l vie --oem 1"
     values = {}
     image = cv2.imread(img_path)
-    for i in range(len(classes)):
+    logger.info(f"field_coordinates: {field_coordinates}")
+    logger.info(f"classes: {classes}")
+    for i in range(len(field_coordinates)):
+        logger.info(f"i: {i}, field_coordinates[i]: {field_coordinates[i]}")
+        if len(field_coordinates[i]) == 0:
+            continue
         field_box = field_coordinates[i][0]
         value_box = detect_value_box(field_box, average_values_coordinate[i], multiplier=1.2)
         field_box, value_box = denormalize(image, field_box, value_box)

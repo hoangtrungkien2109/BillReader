@@ -6,7 +6,7 @@
       <excludeFolder url="file://$MODULE_DIR$/BillReader/data/yolo_detect_corner/datatrain" />
       <excludeFolder url="file://$MODULE_DIR$/BillReader/data/yolo_detect_corner/dataval" />
     </content>
-    <orderEntry type="inheritedJdk" />
+    <orderEntry type="jdk" jdkName="Python 3.11 (python311) (13)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

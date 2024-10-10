@@ -12,6 +12,7 @@ import json
 import yaml
 import shutil
 import glob
+from tensorboard.compat.tensorflow_stub.io.gfile import exists
 from BillReader.corner_detector.corner_detector import detect_corner
 from Flask.src.model_center import ValueDetector, BillClassifier
 
@@ -372,7 +373,7 @@ def ocr_field(bill_type, image):
     coordinates_file = os.path.join(txt_dir, txt_filename)
 
     if not exists(coordinates_file):
-        return render_template('ocr_table.html', ocr_results="",message = 'Bạn chưa label')
+        return render_template('ocr_table.html', ocr_results="", message='Bạn chưa label')
     # Đọc ảnh và kích thước
     image = Image.open(image_path)
     img_width, img_height = image.size
