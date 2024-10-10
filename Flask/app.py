@@ -1,6 +1,8 @@
 from flask import Flask, redirect, url_for, render_template, request, session, flash, send_file, jsonify, send_from_directory
 import os, cv2, json
 from datetime import timedelta
+
+from tensorboard.compat.tensorflow_stub.io.gfile import exists
 from werkzeug.utils import secure_filename
 from Flask.src.database import users, accounts, bills
 from PIL import Image
@@ -367,6 +369,7 @@ def ocr_field(bill_type, image):
 
     image_path = os.path.join(image_dir, image)
     txt_filename = image.replace('.jpg', '.txt')
+
     coordinates_file = os.path.join(txt_dir, txt_filename)
 
     if not exists(coordinates_file):
